@@ -1,0 +1,93 @@
+networks:
+  crm_dev_network:
+    driver: bridge
+
+services:
+  crm_api_dev_container:
+    privileged: true # Para invocar o CLI docker
+    user: ubuntu
+    container_name: crm_api_dev_container
+    image: crm_api_dev_container
+    shm_size: 2g
+    build:
+      context: ..
+      dockerfile: ./.devcontainer/Dockerfile
+      args:
+        - HOST_DOCKER_GROUP_ID=${HOST_DOCKER_GROUP_ID}
+    restart: on-failure
+    environment:
+      - DEV_ROOT_DIR=${DEV_ROOT_DIR}
+      - DATABASE_URL=postgresql://crm:crm@crm_dev_postgres:5432/crm
+      - S3_ACCESS_KEY=${MINIO_ROOT_USER}
+      - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - S3_ENDPOINT=http://localhost:9000
+      - S3_BUCKET_NAME=images-bucket
+      - S3_REGION=us-east-1
+    volumes:
+      - type: bind
+        source: ~/.ssh
+        target: /home/ubuntu/.ssh
+      - type: bind
+        source: ..
+        target: /home/developer/dev
+      #Para invocar o CLI do docker
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    ports:
+      - "3000:3000"
+    #Quando essa instrução terminar o container fecha
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    networks:
+      - crm_dev_network
+  crm_dev_postgres:
+    container_name: crm_dev_postgres
+    image: postgres:16.3
+    restart: always
+    environment:
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: crm
+      POSTGRES_DB: crm
+    ports:
+      - "5432:5432"
+    volumes:
+      - type: bind
+        source: ./data
+        target: /var/lib/postgresql/data
+    shm_size: 2g
+    networks:
+      - crm_dev_network
+  crm_dev_minio:
+    container_name: crm_dev_minio
+    image: minio/minio:latest
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_VOLUMES: "/mnt/minio_data"
+    volumes:
+      - type: bind
+        source: ./minio_data
+        target: /mnt/minio_data
+    shm_size: 2g
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server --console-address ":9001"
+    networks:
+      - crm_dev_network
+  crm_dev_create_mio_bucket:
+    image: minio/mc:latest
+    depends_on:
+      - crm_dev_minio
+    environment:
+      MC_HOST_minio: http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@127.0.0.1:9000
+    entrypoint:
+      - sh
+      - -c
+      - |
+        until mc ls minio > /dev/null 2>&1; do
+          sleep 0.5
+        done
+        mc mb --region us-east-1 minio/images-bucket
+    network_mode: service:crm_dev_minio
