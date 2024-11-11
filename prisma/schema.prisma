@@ -7,78 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  isMaster  Boolean  @default(false)
+}
+
 model User {
-  id                   String        @id @default(cuid())
-  email                String        @unique
-  name                 String
-  birthdate            DateTime
-  gender               String
-  genderInterest       String
-  searchDistance       Int           @default(100)
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  description          Description?
-  images               Image[]
-  location             Location?
-  interactionsSent     Interaction[] @relation("UserInteractions")
-  interactionsReceived Interaction[] @relation("CandidateInteractions")
-}
-
-model Location {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  latitude  Float
-  longitude Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Image {
-  id        String   @id @default(cuid())
-  orderId   Int
-  fileKey   String
-  flag      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-}
-
-model Description {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-}
-
-model PhoneToken {
-  id        String   @id @default(cuid())
-  phone     String   @unique
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model EmailToken {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  token     String
-  verified  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Interaction {
-  id            String   @id @default(cuid())
-  userId        String
-  candidateId   String
-  status        String
-  updatedPhotos Boolean
-  user          User     @relation(fields: [userId], references: [id], name: "UserInteractions")
-  candidate     User     @relation(fields: [candidateId], references: [id], name: "CandidateInteractions")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String       @id @default(cuid())
+  email          String       @unique
+  name           String
+  password       String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
