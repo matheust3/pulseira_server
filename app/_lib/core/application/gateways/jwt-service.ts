@@ -6,7 +6,7 @@ export interface JwtService {
    * @returns The generated token
    * @throws {Error} If the token could not be generated
    */
-  generateToken(payload: object, expiresIn: string): Promise<string>
+  generateToken(payload: object, expiresIn: string): Promise<string>;
 
   /**
    * Validate a JWT token
@@ -14,5 +14,5 @@ export interface JwtService {
    * @returns The payload of the token
    * @throws {Error} If the token is invalid
    */
-  validateToken(token: string): Promise<object>
+  validateToken(token: string): Promise<object>;
 }

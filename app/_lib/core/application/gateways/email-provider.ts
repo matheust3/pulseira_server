@@ -8,10 +8,5 @@ export interface EmailProvider {
    * @returns A promise that resolves when the email is sent.
    * @throws An error if the email could not be sent.
    */
-  sendEmail(
-    to: string,
-    subject: string,
-    text: string,
-    html: string,
-  ): Promise<void>
+  sendEmail(to: string, subject: string, text: string, html: string): Promise<void>;
 }

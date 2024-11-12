@@ -1,5 +1,5 @@
 export interface ApiResponse {
-  status: number
-  body: unknown
-  headers: Headers
+  status: number;
+  body: unknown;
+  headers: Headers;
 }

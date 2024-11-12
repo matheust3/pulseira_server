@@ -1,3 +1,3 @@
 export interface UuidService {
-  generateV7(): string
+  generateV7(): string;
 }

@@ -1,7 +1,7 @@
-import { Token } from './token'
+import { Token } from "./token";
 
 export interface AuthEmailPayload extends Token {
-  tokenId: string
-  token: string
-  nExp?: number
+  tokenId: string;
+  token: string;
+  nExp?: number;
 }
