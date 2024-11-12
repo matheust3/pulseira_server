@@ -21,6 +21,7 @@ model User {
   email          String       @unique
   name           String
   password       String
+  passwordReset  Boolean      @default(true)
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
   createdAt      DateTime     @default(now())
