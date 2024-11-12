@@ -15,7 +15,7 @@ export class UserRepositoryImpl implements UserRepository {
       throw new UserNotFoundError();
     }
     await this.prisma.user.update({
-      where: { email },d
+      where: { email },dd
       data: { password },
     });
   }
