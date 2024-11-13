@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { UserRepository } from "../../core/application/repositories/user-repository";
 import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
+import bcrypt from "bcrypt";
 
 export class UserRepositoryImpl implements UserRepository {
   private readonly prisma: PrismaClient;
@@ -14,9 +15,10 @@ export class UserRepositoryImpl implements UserRepository {
     if (!user) {
       throw new UserNotFoundError();
     }
+    const hashedPassword = await bcrypt.hash(password, 10);
     await this.prisma.user.update({
       where: { email },
-      data: { password },
+      data: { password: hashedPassword },
     });
   }
 }
