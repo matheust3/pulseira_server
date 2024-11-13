@@ -9,8 +9,9 @@ export class ResendEmailProvider implements EmailProvider {
   }
 
   async sendEmail(to: string, subject: string, text: string, html: string): Promise<void> {
+    console.log(process.env.COMMUNICATION_EMAIL_DOMAIN);
     const { error } = await this.resend.emails.send({
-      from: `crm <${process.env.COMMUNICATION_EMAIL_DOMAIN}>`,
+      from: `crm <accounts@${process.env.COMMUNICATION_EMAIL_DOMAIN}>`,
       to,
       text,
       html,

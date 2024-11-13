@@ -25,7 +25,7 @@ describe("resend-email-provider.test.ts - sendEmail", () => {
     await sut.sendEmail("to", "subject", "text", "html");
     //! Assert
     expect(resendSpy.emails.send).toHaveBeenCalledWith({
-      from: "crm <email.domain.com>",
+      from: "crm <accounts@email.domain.com>",
       to: "to",
       text: "text",
       html: "html",
