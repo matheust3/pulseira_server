@@ -21,11 +21,11 @@ export class RecoverPasswordControllerImpl implements RecoverPasswordController 
   async post(req: Request, res: ApiResponse): Promise<void> {
     try {
       const requestBody = (await req.json()) as { email: string };
-      await emailValidator.validate(requestBody.email);
+      const validatedEmail = await emailValidator.validate(requestBody.email);
       const password = generatePassword(12);
-      await this.userRepository.updatePassword(requestBody.email, password);
+      await this.userRepository.updatePassword(validatedEmail, password);
       await this.emailProvider.sendEmail(
-        requestBody.email,
+        validatedEmail,
         "Recuperação de senha",
         `Sua nova senha provisoria é: ${password}`,
         `<p>Sua nova senha provisoria é: <strong>${password}</strong></p>`,

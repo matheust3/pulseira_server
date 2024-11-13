@@ -8,6 +8,8 @@ import * as passwordGenerator from "../../utils/password-generator";
 import { InvalidJsonError } from "../../core/domain/errors/invalid-json-error";
 import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
 import { ResendEmailProvider } from "../../infra/gateways/resend-email-provider";
+import { emailValidator } from "../../utils/validators/email-validator";
+import { ValidationError } from "yup";
 
 describe("recover-password-controller-impl.test.ts - post", () => {
   let sut: RecoverPasswordController;
@@ -16,6 +18,7 @@ describe("recover-password-controller-impl.test.ts - post", () => {
   let response: MockProxy<ApiResponse>;
   let emailProvider: MockProxy<ResendEmailProvider>;
   let generatePasswordMock: MockProxy<typeof passwordGenerator.generatePassword>;
+  let emailValidatorMock: MockProxy<typeof emailValidator.validate>;
 
   beforeEach(() => {
     userRepository = mock<UserRepository>();
@@ -30,6 +33,10 @@ describe("recover-password-controller-impl.test.ts - post", () => {
     generatePasswordMock = jest
       .spyOn(passwordGenerator, "generatePassword")
       .mockReturnValue("mockedPassword") as unknown as MockProxy<typeof passwordGenerator.generatePassword>;
+
+    emailValidatorMock = jest
+      .spyOn(emailValidator, "validate")
+      .mockResolvedValue("validated-email@domain.com") as unknown as MockProxy<typeof emailValidator.validate>;
   });
 
   afterEach(() => {
@@ -61,6 +68,9 @@ describe("recover-password-controller-impl.test.ts - post", () => {
   test("should return 400 if requestBody.email is invalid", async () => {
     //! Arrange
     request.json.mockResolvedValue({ email: "invalid-email" });
+    emailValidatorMock = jest
+      .spyOn(emailValidator, "validate")
+      .mockRejectedValue(new ValidationError("Invalid Email")) as unknown as MockProxy<typeof emailValidator.validate>;
 
     //! Act
     await sut.post(request, response);
@@ -72,6 +82,7 @@ describe("recover-password-controller-impl.test.ts - post", () => {
   test("should update user password", async () => {
     //! Arrange
     const email = "email@domain.com";
+    const validatedEmail = "validated-email@domain.com";
     const password = "mockedPassword";
     request.json.mockResolvedValue({ email });
 
@@ -79,7 +90,8 @@ describe("recover-password-controller-impl.test.ts - post", () => {
     await sut.post(request, response);
 
     //! Assert
-    expect(userRepository.updatePassword).toHaveBeenCalledWith(email, password);
+    expect(emailValidatorMock).toHaveBeenCalledWith(email);
+    expect(userRepository.updatePassword).toHaveBeenCalledWith(validatedEmail, password);
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ message: "Password updated successfully" });
   });
@@ -108,6 +120,7 @@ describe("recover-password-controller-impl.test.ts - post", () => {
   test("should send new provisional password to user", async () => {
     //! Arrange
     const email = "email@domain.com";
+    const validatedEmail = "validated-email@domain.com";
     const password = "mockedPassword";
     request.json.mockResolvedValue({ email });
 
@@ -115,8 +128,9 @@ describe("recover-password-controller-impl.test.ts - post", () => {
     await sut.post(request, response);
 
     //! Assert
+    expect(emailValidatorMock).toHaveBeenCalledWith(email);
     expect(emailProvider.sendEmail).toHaveBeenCalledWith(
-      email,
+      validatedEmail,
       "Recuperação de senha",
       `Sua nova senha provisoria é: ${password}`,
       `<p>Sua nova senha provisoria é: <strong>${password}</strong></p>`,
