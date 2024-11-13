@@ -18,7 +18,10 @@ export class UserRepositoryImpl implements UserRepository {
     const hashedPassword = await bcrypt.hash(password, 10);
     await this.prisma.user.update({
       where: { email },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        passwordReset: true,
+      },
     });
   }
 }

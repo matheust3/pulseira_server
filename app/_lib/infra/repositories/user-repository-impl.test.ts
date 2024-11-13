@@ -32,7 +32,10 @@ describe("user-repository-impl.test.ts - updatePassword", () => {
     expect(bcrypt.hash).toHaveBeenCalledWith(password, 10);
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { email },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        passwordReset: true,
+      },
     });
   });
 
