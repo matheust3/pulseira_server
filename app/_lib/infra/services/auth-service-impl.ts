@@ -19,6 +19,7 @@ export class AuthServiceImpl implements AuthService {
       if (!isPasswordValid) {
         throw new Error("Invalid password");
       } else {
+        delete user.password; // Remove password before encoding user as payload
         const token = await this.jwtService.generateToken(user, "4h");
         return token;
       }
