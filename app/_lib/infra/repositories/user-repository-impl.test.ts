@@ -7,6 +7,77 @@ import bcrypt from "bcrypt";
 
 jest.mock("bcrypt");
 
+describe("user-repository-impl.test.ts - findByEmail", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+  });
+
+  test("returns user without password hash by default", async () => {
+    //! Arrange
+    const email = "test@example.com";
+    const user = { id: "1", email, name: "Test User", organization: { id: "org1", name: "Test Org" } };
+    prisma.user.findUnique.mockResolvedValue(mock<User>(user));
+
+    //! Act
+    const result = await sut.findByEmail(email);
+
+    //! Assert
+    expect(result).toEqual(user);
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: false,
+        organization: { select: { id: true, name: true } },
+      },
+    });
+  });
+
+  test("returns user with password hash if option is set", async () => {
+    //! Arrange
+    const email = "test@example.com";
+    const user = {
+      id: "1",
+      email,
+      name: "Test User",
+      password: "hashedPassword",
+      organization: { id: "org1", name: "Test Org" },
+    };
+    prisma.user.findUnique.mockResolvedValue(mock<User>(user));
+
+    //! Act
+    const result = await sut.findByEmail(email, { withPassHash: true });
+
+    //! Assert
+    expect(result).toEqual(user);
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        organization: { select: { id: true, name: true } },
+      },
+    });
+  });
+
+  test("throws UserNotFoundError if user does not exist", async () => {
+    //! Arrange
+    const email = "nonexistent@example.com";
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    //! Act & Assert
+    await expect(sut.findByEmail(email)).rejects.toThrow(UserNotFoundError);
+  });
+});
+
 describe("user-repository-impl.test.ts - updatePassword", () => {
   let sut: UserRepository;
   let prisma: DeepMockProxy<PrismaClient>;
