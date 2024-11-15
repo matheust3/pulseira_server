@@ -2,6 +2,7 @@ import { LoginController } from "../../core/application/controllers/login-contro
 import { AuthService } from "../../core/application/gateways/auth-service";
 import { ApiResponse } from "../../core/domain/models/routes/api-response";
 import { Request } from "../../core/domain/models/routes/request";
+import { emailValidator } from "../../utils/validators/email-validator";
 
 export class LoginControllerImpl implements LoginController {
   private readonly authService: AuthService;
@@ -12,7 +13,8 @@ export class LoginControllerImpl implements LoginController {
   async post(req: Request, res: ApiResponse): Promise<void> {
     try {
       const requestBody = (await req.json()) as { email: string; password: string };
-      const token = await this.authService.login(requestBody.email, requestBody.password);
+      const validEmail = await emailValidator.validate(requestBody.email);
+      const token = await this.authService.login(validEmail, requestBody.password);
       res.status = 200;
       res.body = { token };
     } catch (error) {
