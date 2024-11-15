@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { EmailProvider } from "../../core/application/gateways/email-provider";
+import { EmailProvider } from "../../core/application/gateways/external/email-provider";
 
 export class ResendEmailProvider implements EmailProvider {
   private readonly resend: Resend;
