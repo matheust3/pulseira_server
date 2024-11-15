@@ -44,9 +44,50 @@ describe("jwt-service-impl.test.ts - validateToken", () => {
     const payload = await sut.validateToken(token);
     //! Assert
     expect(payload).toEqual({
-      id: "1",
+      data: { id: "1" },
       exp: expect.any(Number),
       iat: expect.any(Number),
     });
+  });
+});
+
+describe("jwt-service-impl.test.ts - generateRefreshToken", () => {
+  let sut: JwtServiceImpl;
+
+  beforeAll(() => {
+    process.env.JWT_SECRET = "secret";
+    sut = new JwtServiceImpl();
+  });
+
+  test("ensure return a refresh token", async () => {
+    //! Arrange
+    const token = await sut.generateToken({ id: "1" }, "1h");
+    //! Act
+    const refreshToken = await sut.generateRefreshToken(token, "2h");
+    //! Assert
+    expect(refreshToken).toBeDefined();
+  });
+
+  test("ensure throws if token to refresh is invalid", async () => {
+    //! Arrange
+    const token = await sut.generateToken({ id: "1" }, "1h");
+    const mock = jest.spyOn(jose, "jwtVerify").mockImplementationOnce(() => {
+      throw new Error("test");
+    });
+    //! Act
+    //! Assert
+    expect(sut.generateRefreshToken(token, "2h")).rejects.toThrow("test");
+    mock.mockRestore();
+  });
+
+  test("ensure refreshed token payload is same as original token", async () => {
+    //! Arrange
+    const originalToken = await sut.generateToken({ id: "1" }, "1h");
+    const originalPayload = await sut.validateToken<{ id: string }>(originalToken);
+    //! Act
+    const refreshToken = await sut.generateRefreshToken(originalToken, "2h");
+    const refreshedPayload = await sut.validateToken<{ id: string }>(refreshToken);
+    //! Assert
+    expect(originalPayload.data).toEqual(refreshedPayload.data);
   });
 });

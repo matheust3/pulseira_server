@@ -15,4 +15,13 @@ export interface JwtService {
    * @throws {Error} If the token is invalid
    */
   validateToken(token: string): Promise<object>;
+
+  /**
+   * Generate a refresh token
+   * @param token - The token to be refreshed
+   * @param expiresIn - The expiration time of the token
+   * @returns The generated token
+   * @throws {Error} If the token could not be generated
+   */
+  generateRefreshToken(token: string, expiresIn: string): Promise<string>;
 }
