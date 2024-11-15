@@ -1,4 +1,5 @@
 import { GetEmailTokenRateLimiter } from "@/middlewares";
+import { LoginRateLimiter } from "@/middlewares/login-rate-limiter";
 import { RecoverPasswordRateLimiter } from "@/middlewares/recover-password-rate-limiter";
 
 export class LoadMiddlewares {
@@ -12,8 +13,14 @@ export class LoadMiddlewares {
     return this._recoverPasswordRateLimiter;
   }
 
+  private readonly _loginRateLimiter: LoginRateLimiter;
+  public get loginRateLimiter(): LoginRateLimiter {
+    return this._loginRateLimiter;
+  }
+
   constructor() {
     this._getEmailTokenRateLimiter = new GetEmailTokenRateLimiter();
     this._recoverPasswordRateLimiter = new RecoverPasswordRateLimiter();
+    this._loginRateLimiter = new LoginRateLimiter();
   }
 }
