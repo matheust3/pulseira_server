@@ -3,6 +3,8 @@ import { JwtService } from "../../core/application/gateways/jwt-service";
 import { UserRepository } from "../../core/application/repositories/user-repository";
 import bcrypt from "bcrypt";
 import { UnauthorizedError } from "../../core/domain/errors/unauthorized-error";
+import { AuthToken } from "../../core/domain/models/authentication/AuthToken";
+import { User } from "../../core/domain/models/user";
 
 export class AuthServiceImpl implements AuthService {
   private readonly userRepository: UserRepository;
@@ -11,6 +13,14 @@ export class AuthServiceImpl implements AuthService {
   constructor(args: { userRepository: UserRepository; jwtService: JwtService }) {
     this.userRepository = args.userRepository;
     this.jwtService = args.jwtService;
+  }
+
+  async verifyToken(token: string): Promise<AuthToken<User>> {
+    try {
+      return await this.jwtService.validateToken(token);
+    } catch (error) {
+      throw new UnauthorizedError();
+    }
   }
 
   async regenerateToken(token: string): Promise<string> {

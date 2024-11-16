@@ -1,3 +1,6 @@
+import { AuthToken } from "../../domain/models/authentication/AuthToken";
+import { User } from "../../domain/models/user";
+
 export interface AuthService {
   /**
    * Logs a user in.
@@ -15,4 +18,12 @@ export interface AuthService {
    * @throws An error if the registration is unsuccessful.
    */
   regenerateToken(token: string): Promise<string>;
+
+  /**
+   * Verifies a token.
+   * @param token - The token to verify.
+   * @returns A promise that resolves with the token payload if the token is valid.
+   * @throws An error if the token is invalid.
+   */
+  verifyToken(token: string): Promise<AuthToken<User>>;
 }

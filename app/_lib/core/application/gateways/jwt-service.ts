@@ -1,3 +1,5 @@
+import { AuthToken } from "../../domain/models/authentication/AuthToken";
+
 export interface JwtService {
   /**
    * Generate a JWT token
@@ -14,7 +16,7 @@ export interface JwtService {
    * @returns The payload of the token
    * @throws {Error} If the token is invalid
    */
-  validateToken(token: string): Promise<object>;
+  validateToken<T>(token: string): Promise<AuthToken<T>>;
 
   /**
    * Generate a refresh token
