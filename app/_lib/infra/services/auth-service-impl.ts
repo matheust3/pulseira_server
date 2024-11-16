@@ -2,6 +2,7 @@ import { AuthService } from "../../core/application/gateways/auth-service";
 import { JwtService } from "../../core/application/gateways/jwt-service";
 import { UserRepository } from "../../core/application/repositories/user-repository";
 import bcrypt from "bcrypt";
+import { UnauthorizedError } from "../../core/domain/errors/unauthorized-error";
 
 export class AuthServiceImpl implements AuthService {
   private readonly userRepository: UserRepository;
@@ -10,6 +11,14 @@ export class AuthServiceImpl implements AuthService {
   constructor(args: { userRepository: UserRepository; jwtService: JwtService }) {
     this.userRepository = args.userRepository;
     this.jwtService = args.jwtService;
+  }
+
+  async regenerateToken(token: string): Promise<string> {
+    try {
+      return await this.jwtService.generateRefreshToken(token, "4h");
+    } catch (error) {
+      throw new UnauthorizedError();
+    }
   }
 
   async login(email: string, password: string): Promise<string> {

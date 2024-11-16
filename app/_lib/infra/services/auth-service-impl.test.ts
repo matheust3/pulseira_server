@@ -4,6 +4,7 @@ import { JwtService } from "../../core/application/gateways/jwt-service";
 import { mock, MockProxy } from "jest-mock-extended";
 import { User } from "../../core/domain/models/user";
 import bcrypt from "bcrypt";
+import { UnauthorizedError } from "../../core/domain/errors/unauthorized-error";
 
 jest.mock("bcrypt");
 
@@ -62,5 +63,32 @@ describe("auth-service-impl.test.ts - login", () => {
     //! Assert
     expect(token).toBe("valid_token");
     expect(jwtService.generateToken).toHaveBeenCalledWith(userWithPassword, "4h");
+  });
+});
+
+describe("auth-service-impl.test.ts - regenerateToken", () => {
+  let sut: AuthServiceImpl;
+  let jwtService: MockProxy<JwtService>;
+
+  beforeEach(() => {
+    jwtService = mock<JwtService>();
+    sut = new AuthServiceImpl({ userRepository: mock<UserRepository>(), jwtService });
+  });
+
+  test("should return a new token if regeneration is successful", async () => {
+    //! Arrange
+    jwtService.generateRefreshToken.mockResolvedValue("new_token");
+    //! Act
+    const token = await sut.regenerateToken("old_token");
+    //! Assert
+    expect(token).toBe("new_token");
+    expect(jwtService.generateRefreshToken).toHaveBeenCalledWith("old_token", "4h");
+  });
+
+  test("should throw UnauthorizedError if token regeneration fails", async () => {
+    //! Arrange
+    jwtService.generateRefreshToken.mockRejectedValue(new Error("Token error"));
+    //! Act & Assert
+    await expect(sut.regenerateToken("old_token")).rejects.toThrow(UnauthorizedError);
   });
 });
