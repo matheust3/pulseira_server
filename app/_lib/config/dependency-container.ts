@@ -34,8 +34,6 @@ export class DependencyContainer {
   }
 
   private constructor() {
-    this.loadMiddlewares = new LoadMiddlewares();
-
     // Load repositories
     this.loadRepositories = new LoadRepositories({ prismaClient: prisma });
 
@@ -44,6 +42,9 @@ export class DependencyContainer {
 
     // Load services
     this.loadServices = new LoadServices({ userRepository: this.loadRepositories.userRepository });
+
+    // Load middlewares
+    this.loadMiddlewares = new LoadMiddlewares({ authService: this.loadServices.authService });
   }
 
   public static getInstance(): DependencyContainer {
