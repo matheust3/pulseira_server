@@ -7,6 +7,7 @@ export type RemoteAddress = {
 
 export type Authorization = {
   userId?: string;
+  token?: string;
 };
 export interface Request {
   authorization: Authorization;
