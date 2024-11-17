@@ -11,15 +11,40 @@ export class UserRepositoryImpl implements UserRepository {
     this.prisma = args.prisma;
   }
 
+  async update(user: User, organizationId: string): Promise<User> {
+    const exists = await this.prisma.user.findUnique({ where: { id: user.id, organizationId } });
+    if (!exists) {
+      throw new UserNotFoundError();
+    } else {
+      const updatedUser = await this.prisma.user.update({
+        data: {
+          name: user.name,
+          email: user.email,
+          permissions: { update: { manageUsers: user.permissions.manageUsers } },
+        },
+        where: { id: user.id, organizationId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          organization: { select: { id: true, name: true } },
+          permissions: { select: { id: true, manageUsers: true } },
+        },
+      });
+
+      if (updatedUser.permissions === null) {
+        throw new Error("User does not have permissions");
+      } else {
+        return { ...updatedUser, permissions: updatedUser.permissions };
+      }
+    }
+  }
+
   private async hashPassword(password?: string): Promise<string> {
     if (!password) {
       throw new Error("Password is required to hash it");
     }
     return bcrypt.hash(password, 10);
-  }
-
-  async delete(userId: string, organizationId: string): Promise<void> {
-    await this.prisma.user.delete({ where: { id: userId, organizationId }, include: { permissions: true } });
   }
 
   async create(user: User): Promise<User> {

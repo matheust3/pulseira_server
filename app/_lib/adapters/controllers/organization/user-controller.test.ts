@@ -173,8 +173,8 @@ describe("UserControllerImpl - post", () => {
   });
 });
 
-describe("UserControllerImpl - delete", () => {
-  let createUserController: UserControllerImpl;
+describe("UserControllerImpl - put", () => {
+  let updateUserController: UserControllerImpl;
   let mockUserRepository: MockProxy<UserRepository>;
   let mockUuidService: MockProxy<UuidService>;
   let mockRequest: MockProxy<Request>;
@@ -183,12 +183,9 @@ describe("UserControllerImpl - delete", () => {
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
-    mockUserRepository.findByEmail.mockRejectedValue(new UserNotFoundError());
-
     mockUuidService = mock<UuidService>();
-    mockUuidService.generateV7.mockReturnValue("uuid-v7");
 
-    createUserController = new UserControllerImpl({
+    updateUserController = new UserControllerImpl({
       userRepository: mockUserRepository,
       uuidService: mockUuidService,
     });
@@ -217,20 +214,22 @@ describe("UserControllerImpl - delete", () => {
     mockResponse = mockDeep<ApiResponse>();
   });
 
-  it("should delete a user successfully", async () => {
-    mockRequest.searchParams = new URLSearchParams({ userId: "user-id" });
-    mockUserRepository.delete.mockResolvedValue();
+  it("should update a user successfully", async () => {
+    mockRequest.json.mockResolvedValue({ user });
+    userValidator.validate = jest.fn().mockResolvedValue(user);
+    mockUserRepository.update.mockResolvedValue(user);
 
-    await createUserController.delete(mockRequest, mockResponse);
+    await updateUserController.put(mockRequest, mockResponse);
 
-    expect(mockResponse.status).toBe(204);
-    expect(mockResponse.body).toBeNull();
+    expect(mockResponse.status).toBe(200);
+    expect(mockResponse.body).toEqual({ user });
+    expect(mockUserRepository.update).toHaveBeenCalledWith(user, mockRequest.authorization.user?.organization.id);
   });
 
   it("should return 401 if user is not authorized", async () => {
     mockRequest.authorization.user = undefined;
 
-    await createUserController.delete(mockRequest, mockResponse);
+    await updateUserController.put(mockRequest, mockResponse);
 
     expect(mockResponse.status).toBe(401);
     expect(mockResponse.body).toEqual({ message: "Unauthorized" });
@@ -242,35 +241,37 @@ describe("UserControllerImpl - delete", () => {
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
 
-    await createUserController.delete(mockRequest, mockResponse);
+    await updateUserController.put(mockRequest, mockResponse);
 
     expect(mockResponse.status).toBe(403);
     expect(mockResponse.body).toEqual({ message: "Forbidden" });
   });
 
-  it("should return 400 if userId is missing", async () => {
-    mockRequest.searchParams = new URLSearchParams();
+  it("should return 400 if JSON is invalid", async () => {
+    mockRequest.json.mockRejectedValue(new InvalidJsonError());
 
-    await createUserController.delete(mockRequest, mockResponse);
+    await updateUserController.put(mockRequest, mockResponse);
 
     expect(mockResponse.status).toBe(400);
-    expect(mockResponse.body).toEqual({ message: "Missing userId" });
+    expect(mockResponse.body).toEqual({ message: "Invalid JSON" });
   });
 
-  it("should return 404 if user is not found", async () => {
-    mockRequest.searchParams = new URLSearchParams({ userId: "user-id" });
-    mockUserRepository.delete.mockRejectedValue(new UserNotFoundError());
+  it("should return 400 if validation fails", async () => {
+    const validationError = new ValidationError("Validation error", null, "field");
+    validationError.errors = ["Validation error"];
+    mockRequest.json.mockResolvedValue({ user });
+    userValidator.validate = jest.fn().mockRejectedValue(validationError);
 
-    await createUserController.delete(mockRequest, mockResponse);
+    await updateUserController.put(mockRequest, mockResponse);
 
-    expect(mockResponse.status).toBe(404);
-    expect(mockResponse.body).toEqual({ message: "User not found" });
+    expect(mockResponse.status).toBe(400);
+    expect(mockResponse.body).toEqual({ message: "Validation error" });
+    expect(mockUserRepository.update).not.toHaveBeenCalled();
   });
 
   it("should throw for other errors", async () => {
-    mockRequest.searchParams = new URLSearchParams({ userId: "user-id" });
-    mockUserRepository.delete.mockRejectedValue(new Error("Unknown error"));
+    mockRequest.json.mockRejectedValue(new Error("Unknown error"));
 
-    await expect(createUserController.delete(mockRequest, mockResponse)).rejects.toThrow("Unknown error");
+    await expect(updateUserController.put(mockRequest, mockResponse)).rejects.toThrow("Unknown error");
   });
 });

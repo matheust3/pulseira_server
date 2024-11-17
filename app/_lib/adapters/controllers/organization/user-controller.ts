@@ -18,26 +18,25 @@ export class UserControllerImpl implements UserController {
     this.uuidService = args.uuidService;
   }
 
-  async delete(req: Request, res: ApiResponse): Promise<void> {
+  async put(req: Request, res: ApiResponse): Promise<void> {
     if (req.authorization.user === undefined) {
       res.status = 401;
       res.body = { message: "Unauthorized" };
     } else {
       if (req.authorization.user.permissions.manageUsers) {
         try {
-          const userId = req.searchParams.get("userId");
-          if (userId === null) {
-            res.status = 400;
-            res.body = { message: "Missing userId" };
-          } else {
-            await this.userRepository.delete(userId, req.authorization.user.organization.id);
-            res.status = 204;
-            res.body = null;
-          }
+          const body = (await req.json()) as { user: User };
+          const validUser = await userValidator.validate(body.user);
+          const user = await this.userRepository.update(validUser, req.authorization.user.organization.id);
+          res.status = 200;
+          res.body = { user };
         } catch (e) {
-          if (e instanceof UserNotFoundError) {
-            res.status = 404;
-            res.body = { message: "User not found" };
+          if (e instanceof InvalidJsonError) {
+            res.status = 400;
+            res.body = { message: "Invalid JSON" };
+          } else if (e instanceof ValidationError) {
+            res.status = 400;
+            res.body = { message: e.errors.join(", ") };
           } else {
             throw e;
           }

@@ -235,37 +235,79 @@ describe("user-repository-impl.test.ts - create", () => {
   });
 });
 
-describe("user-repository-impl.test.ts - delete", () => {
+describe("user-repository-impl.test.ts - update", () => {
   let sut: UserRepository;
   let prisma: DeepMockProxy<PrismaClient>;
+  let user: MockProxy<User>;
 
   beforeEach(() => {
     prisma = mockDeep<PrismaClient>();
     sut = new UserRepositoryImpl({ prisma });
-  });
 
-  test("deletes a user with the given userId and organizationId", async () => {
-    //! Arrange
-    const userId = "1";
-    const organizationId = "org1";
-
-    //! Act
-    await sut.delete(userId, organizationId);
-
-    //! Assert
-    expect(prisma.user.delete).toHaveBeenCalledWith({
-      where: { id: userId, organizationId },
-      include: { permissions: true },
+    user = mock<User>({
+      id: "1",
+      email: "test@example.com",
+      name: "Test User",
+      organization: { id: "org1" },
+      permissions: { id: "perm1", manageUsers: true },
     });
   });
 
-  test("throws an error if user does not exist", async () => {
+  test("updates a user successfully", async () => {
     //! Arrange
-    const userId = "nonexistent";
     const organizationId = "org1";
-    prisma.user.delete.mockRejectedValue(new Error("User not found"));
+    const updatedUser = {
+      ...user,
+      organization: { id: "org1", name: "Test Org" },
+      permissions: { id: "perm1", manageUsers: true },
+    } as PrismaUser & { organization: Organization; permissions: Permissions };
+    prisma.user.findUnique.mockResolvedValue(mockDeep<PrismaUser>(user));
+    prisma.user.update.mockResolvedValue(updatedUser);
+
+    //! Act
+    const result = await sut.update(user, organizationId);
+
+    //! Assert
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: user.id, organizationId } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      data: {
+        name: user.name,
+        email: user.email,
+        permissions: { update: { manageUsers: user.permissions.manageUsers } },
+      },
+      where: { id: user.id, organizationId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+    expect(result).toEqual(updatedUser);
+  });
+
+  test("throws UserNotFoundError if user does not exist", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    prisma.user.findUnique.mockResolvedValue(null);
 
     //! Act & Assert
-    await expect(sut.delete(userId, organizationId)).rejects.toThrow("User not found");
+    await expect(sut.update(user, organizationId)).rejects.toThrow(UserNotFoundError);
+  });
+
+  test("throws error if user.permissions is null", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    const updatedUser = {
+      ...user,
+      organization: { id: "org1", name: "Test Org" },
+      permissions: null,
+    } as PrismaUser & { organization: Organization; permissions: null };
+    prisma.user.findUnique.mockResolvedValue(mockDeep<PrismaUser>(user));
+    prisma.user.update.mockResolvedValue(updatedUser);
+
+    //! Act & Assert
+    await expect(sut.update(user, organizationId)).rejects.toThrow("User does not have permissions");
   });
 });

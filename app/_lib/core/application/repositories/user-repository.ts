@@ -16,9 +16,9 @@ export interface UserRepository {
   create(user: User): Promise<User>;
 
   /**
-   * Delete a user
-   * @param userId ID of the user to delete
-   * @param organizationId ID of the organization to delete the user from
+   * Update a user
+   * @param user The user to update
+   * @param organizationId The organization ID of the user
    */
-  delete(userId: string, organizationId: string): Promise<void>;
+  update(user: User, organizationId: string): Promise<User>;
 }
