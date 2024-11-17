@@ -1,5 +1,5 @@
 import { userValidator } from "./user-validator";
-import { organizationValidator } from "./organizationValidator";
+import { organizationValidator } from "./organization-validator";
 import { userPermissionsValidator } from "./user-permissions-validator";
 
 describe("userValidator", () => {

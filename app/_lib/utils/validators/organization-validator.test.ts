@@ -1,4 +1,4 @@
-import { organizationValidator } from "./organizationValidator";
+import { organizationValidator } from "./organization-validator";
 import { Organization } from "../../core/domain/models/organization";
 import { ValidationError } from "yup";
 
