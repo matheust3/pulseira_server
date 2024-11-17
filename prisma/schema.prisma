@@ -33,6 +33,7 @@ model User {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   permissions    Permissions?
+  isArchived     Boolean      @default(false)
 
   @@unique([email, organizationId])
 }
