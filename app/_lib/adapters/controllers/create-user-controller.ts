@@ -1,0 +1,52 @@
+import { CreateUserController } from "../../core/application/controllers/create-user-controller";
+import { UuidService } from "../../core/application/gateways/uuid-service";
+import { UserRepository } from "../../core/application/repositories/user-repository";
+import { InvalidJsonError } from "../../core/domain/errors/invalid-json-error";
+import { ApiResponse } from "../../core/domain/models/routes/api-response";
+import { Request } from "../../core/domain/models/routes/request";
+import { User } from "../../core/domain/models/user";
+import { userValidator } from "../../utils/validators/user-validator";
+
+export class CreateUserControllerImpl implements CreateUserController {
+  private readonly userRepository: UserRepository;
+  private readonly uuidService: UuidService;
+
+  constructor(args: { userRepository: UserRepository; uuidService: UuidService }) {
+    this.userRepository = args.userRepository;
+    this.uuidService = args.uuidService;
+  }
+
+  async post(req: Request, res: ApiResponse): Promise<void> {
+    if (req.authorization.user === undefined) {
+      res.status = 401;
+      res.body = { message: "Unauthorized" };
+    } else {
+      if (req.authorization.user.permissions.manageUsers) {
+        try {
+          const body = (await req.json()) as { user: User };
+          const userId = this.uuidService.generateV7();
+          const permissionId = this.uuidService.generateV7();
+
+          body.user.id = userId;
+          body.user.organization = req.authorization.user.organization;
+          body.user.permissions = { id: permissionId, manageUsers: false };
+          const validUser = await userValidator.validate(body.user);
+          const user = await this.userRepository.create(validUser);
+          res.status = 201;
+          res.body = { user };
+        } catch (e) {
+          if (e instanceof InvalidJsonError) {
+            res.status = 400;
+            res.body = { message: "Invalid JSON" };
+          } else {
+            res.status = 500;
+            res.body = { message: "Internal Server Error" };
+          }
+        }
+      } else {
+        res.status = 403;
+        res.body = { message: "Forbidden" };
+      }
+    }
+  }
+}
