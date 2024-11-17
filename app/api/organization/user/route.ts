@@ -8,3 +8,5 @@ const controller = new UserControllerImpl({
 });
 
 export const POST = handler(controller.post.bind(controller), dependencyContainer.middlewares.guard);
+
+export const PUT = handler(controller.put.bind(controller), dependencyContainer.middlewares.guard);
