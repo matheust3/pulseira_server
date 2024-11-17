@@ -1,9 +1,10 @@
-import { DeepMockProxy, mock, mockDeep } from "jest-mock-extended";
+import { DeepMockProxy, mock, mockDeep, MockProxy } from "jest-mock-extended";
 import { UserRepository } from "../../core/application/repositories/user-repository";
 import { UserRepositoryImpl } from "./user-repository-impl";
-import { PrismaClient, User } from "@prisma/client";
+import { Organization, Permissions, PrismaClient, User as PrismaUser } from "@prisma/client";
 import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
 import bcrypt from "bcrypt";
+import { User } from "../../core/domain/models/user";
 
 jest.mock("bcrypt");
 
@@ -26,7 +27,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
       organization: { id: "org1", name: "Test Org" },
       permissions: { id: "perm1", manageUsers: true },
     };
-    prisma.user.findUnique.mockResolvedValue(mock<User>(user));
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>(user));
 
     //! Act
     const result = await sut.findByEmail(email);
@@ -56,7 +57,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
       password: "hashedPassword",
       organization: { id: "org1", name: "Test Org" },
     };
-    prisma.user.findUnique.mockResolvedValue(mock<User>(user));
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>(user));
 
     //! Act
     const result = await sut.findByEmail(email, { withPassHash: true });
@@ -95,7 +96,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
       organization: { id: "org1", name: "Test Org" },
       permissions: null,
     };
-    prisma.user.findUnique.mockResolvedValue(mock<User>(user));
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>(user));
 
     //! Act & Assert
     await expect(sut.findByEmail(email)).rejects.toThrow("User does not have permissions");
@@ -110,7 +111,7 @@ describe("user-repository-impl.test.ts - updatePassword", () => {
     prisma = mockDeep<PrismaClient>();
     sut = new UserRepositoryImpl({ prisma });
 
-    prisma.user.findUnique.mockResolvedValue(mock<User>());
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>());
   });
 
   test("ensure call prisma with correct params", async () => {
@@ -142,5 +143,94 @@ describe("user-repository-impl.test.ts - updatePassword", () => {
 
     //! Act & Assert
     await expect(sut.updatePassword(email, password)).rejects.toThrow(UserNotFoundError);
+  });
+});
+
+describe("user-repository-impl.test.ts - create", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+  let user: MockProxy<User>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+
+    user = mock<User>({
+      id: "1",
+      email: "test@example.com",
+      name: "Test User",
+      password: "plainPassword",
+      organization: { id: "org1" },
+      permissions: { id: "perm1", manageUsers: true },
+    });
+  });
+
+  test("creates a user with hashed password", async () => {
+    //! Arrange
+    const hashedPassword = "$2b$10$FKqivT2TYUwXBLiXRXz3Ee19hpYM9zbI.MtpWZHv9yn7DWaAnPmtm";
+    (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+    const createdUser = {
+      ...user,
+      organization: { id: "org1", name: "Test Org" },
+      permissions: { id: "perm1", manageUsers: true },
+    } as PrismaUser & { organization: Organization; permissions: Permissions };
+    prisma.user.create.mockResolvedValue(createdUser);
+
+    //! Act
+    const result = await sut.create(user);
+
+    //! Assert
+    expect(bcrypt.hash).toHaveBeenCalledWith(user.password, 10);
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        password: hashedPassword,
+        organization: { connect: { id: user.organization.id } },
+        permissions: { create: { manageUsers: user.permissions.manageUsers, id: user.permissions.id } },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: false,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        organization: { id: "org1", name: "Test Org" },
+        permissions: { id: "perm1", manageUsers: true },
+      }),
+    );
+    expect(result.password).toBeUndefined();
+  });
+
+  test("throws error if user.permissions is null", async () => {
+    //! Arrange
+    const hashedPassword = "$2b$10$FKqivT2TYUwXBLiXRXz3Ee19hpYM9zbI.MtpWZHv9yn7DWaAnPmtm";
+    (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+    const createdUser = {
+      ...user,
+      organization: { id: "org1", name: "Test Org" },
+      permissions: null,
+    } as PrismaUser & { organization: Organization; permissions: null };
+    prisma.user.create.mockResolvedValue(createdUser);
+
+    //! Act & Assert
+    await expect(sut.create(user)).rejects.toThrow("User does not have permissions");
+  });
+
+  test("throws error if password is undefined", async () => {
+    //! Arrange
+    user.password = undefined;
+
+    //! Act & Assert
+    await expect(sut.create(user)).rejects.toThrow("Password is required to hash it");
   });
 });

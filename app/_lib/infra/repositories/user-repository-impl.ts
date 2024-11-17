@@ -11,6 +11,44 @@ export class UserRepositoryImpl implements UserRepository {
     this.prisma = args.prisma;
   }
 
+  private async hashPassword(password?: string): Promise<string> {
+    if (!password) {
+      throw new Error("Password is required to hash it");
+    }
+    return bcrypt.hash(password, 10);
+  }
+
+  async create(user: User): Promise<User> {
+    const hashedPassword = await this.hashPassword(user.password);
+
+    const createdUser = await this.prisma.user.create({
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        password: hashedPassword,
+        organization: { connect: { id: user.organization.id } },
+        permissions: { create: { manageUsers: user.permissions.manageUsers, id: user.permissions.id } },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: false,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+
+    if (createdUser.permissions === null) {
+      throw new Error("User does not have permissions");
+    } else {
+      const user: User = { ...createdUser, permissions: createdUser.permissions };
+      delete user.password;
+      return user;
+    }
+  }
+
   async findByEmail(email: string, options?: { withPassHash: boolean }): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: { email },

@@ -8,4 +8,10 @@ export interface UserRepository {
    * @param options Options for the query (e.g. withPassHash)
    */
   findByEmail(email: string, options?: { withPassHash: boolean }): Promise<User>;
+
+  /**
+   * Create a new user
+   * @param user Returns the user that was created
+   */
+  create(user: User): Promise<User>;
 }
