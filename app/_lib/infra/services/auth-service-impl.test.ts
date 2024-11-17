@@ -6,6 +6,7 @@ import { User } from "../../core/domain/models/user";
 import bcrypt from "bcrypt";
 import { UnauthorizedError } from "../../core/domain/errors/unauthorized-error";
 import { AuthToken } from "../../core/domain/models/authentication/AuthToken";
+import { ForbiddenError } from "../../core/domain/errors/forbidden-error";
 
 jest.mock("bcrypt");
 
@@ -20,7 +21,7 @@ describe("auth-service-impl.test.ts - login", () => {
     jwtService = mock<JwtService>();
     sut = new AuthServiceImpl({ userRepository, jwtService });
 
-    user = mock<User>({ password: "password", name: "matheus" });
+    user = mock<User>({ password: "password", name: "matheus", isArchived: false });
 
     userRepository.findByEmail.mockResolvedValue(user);
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -43,9 +44,16 @@ describe("auth-service-impl.test.ts - login", () => {
 
   test("should throw error if user's password is undefined", async () => {
     //! Arrange
-    userRepository.findByEmail.mockResolvedValue(mock<User>({ password: undefined }));
+    userRepository.findByEmail.mockResolvedValue(mock<User>({ ...user, password: undefined }));
     //! Act & Assert
     await expect(sut.login("email", "password")).rejects.toThrow("Invalid password");
+  });
+
+  test("should throw ForbiddenError if user is archived", async () => {
+    //! Arrange
+    userRepository.findByEmail.mockResolvedValue(mock<User>({ ...user, isArchived: true }));
+    //! Act & Assert
+    await expect(sut.login("email", "password")).rejects.toThrow(ForbiddenError);
   });
 
   test("should return token if login is successful", async () => {
