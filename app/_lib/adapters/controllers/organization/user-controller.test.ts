@@ -288,3 +288,83 @@ describe("UserControllerImpl - put", () => {
     expect(mockResponse.body).toEqual({ message: "User not found" });
   });
 });
+
+describe("UserControllerImpl - get", () => {
+  let getUserController: UserControllerImpl;
+  let mockUserRepository: MockProxy<UserRepository>;
+  let mockUuidService: MockProxy<UuidService>;
+  let mockRequest: MockProxy<Request>;
+  let mockResponse: DeepMockProxy<ApiResponse>;
+  let user: User;
+
+  beforeEach(() => {
+    mockUserRepository = mock<UserRepository>();
+    mockUuidService = mock<UuidService>();
+
+    getUserController = new UserControllerImpl({
+      userRepository: mockUserRepository,
+      uuidService: mockUuidService,
+    });
+
+    user = {
+      id: "user-id",
+      email: "email@domain.com",
+      password: "test-password",
+      name: "Test User",
+      organization: { id: "org-id", name: "org-name" },
+      permissions: { id: "perm-id", manageUsers: false },
+      isArchived: false,
+    };
+
+    mockRequest = mock<Request>({
+      authorization: {
+        user: {
+          id: "master-user-id",
+          email: "master@email.com",
+          name: "Master User",
+          permissions: { manageUsers: true },
+          organization: user.organization,
+        },
+      },
+    });
+
+    mockResponse = mockDeep<ApiResponse>();
+  });
+
+  it("should return users successfully", async () => {
+    const users = [user];
+    mockUserRepository.getAllInOrganization.mockResolvedValue(users);
+
+    await getUserController.get(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(200);
+    expect(mockResponse.body).toEqual({ users });
+  });
+
+  it("should return 401 if user is not authorized", async () => {
+    mockRequest.authorization.user = undefined;
+
+    await getUserController.get(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(401);
+    expect(mockResponse.body).toEqual({ message: "Unauthorized" });
+  });
+
+  it("should return 403 if user does not have manageUsers permission", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
+    });
+
+    await getUserController.get(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(403);
+    expect(mockResponse.body).toEqual({ message: "Forbidden" });
+  });
+
+  it("should throw if repository throws any error", async () => {
+    mockUserRepository.getAllInOrganization.mockRejectedValue(new Error("Repository error"));
+
+    await expect(getUserController.get(mockRequest, mockResponse)).rejects.toThrow("Repository error");
+  });
+});

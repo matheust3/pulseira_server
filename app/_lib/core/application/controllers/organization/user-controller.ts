@@ -5,4 +5,5 @@ import { ApiController } from "../api-controller";
 export interface UserController extends ApiController {
   post(req: Request, res: ApiResponse): Promise<void>;
   put(req: Request, res: ApiResponse): Promise<void>;
+  get(req: Request, res: ApiResponse): Promise<void>;
 }

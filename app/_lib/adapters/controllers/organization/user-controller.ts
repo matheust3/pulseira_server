@@ -18,6 +18,22 @@ export class UserControllerImpl implements UserController {
     this.uuidService = args.uuidService;
   }
 
+  async get(req: Request, res: ApiResponse): Promise<void> {
+    if (req.authorization.user === undefined) {
+      res.status = 401;
+      res.body = { message: "Unauthorized" };
+    } else {
+      if (req.authorization.user.permissions.manageUsers) {
+        const users = await this.userRepository.getAllInOrganization(req.authorization.user.organization.id);
+        res.status = 200;
+        res.body = { users };
+      } else {
+        res.status = 403;
+        res.body = { message: "Forbidden" };
+      }
+    }
+  }
+
   async put(req: Request, res: ApiResponse): Promise<void> {
     if (req.authorization.user === undefined) {
       res.status = 401;
