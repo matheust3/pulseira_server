@@ -1,5 +1,6 @@
 import { LoginController } from "../../core/application/controllers/login-controller";
 import { AuthService } from "../../core/application/gateways/auth-service";
+import { ForbiddenError } from "../../core/domain/errors/forbidden-error";
 import { ApiResponse } from "../../core/domain/models/routes/api-response";
 import { Request } from "../../core/domain/models/routes/request";
 import { emailValidator } from "../../utils/validators/email-validator";
@@ -18,8 +19,13 @@ export class LoginControllerImpl implements LoginController {
       res.status = 200;
       res.body = { token };
     } catch (error) {
-      res.status = 401;
-      res.body = { error: "Invalid email or password" };
+      if (error instanceof ForbiddenError) {
+        res.status = 403;
+        res.body = { error: error.message };
+      } else {
+        res.status = 401;
+        res.body = { error: "Invalid email or password" };
+      }
     }
   }
 }
