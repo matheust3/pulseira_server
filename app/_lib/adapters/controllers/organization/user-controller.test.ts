@@ -1,4 +1,4 @@
-import { UserControllerImpl } from "./create-user-controller";
+import { UserControllerImpl } from "./user-controller";
 import { UuidService } from "../../../core/application/gateways/uuid-service";
 import { UserRepository } from "../../../core/application/repositories/user-repository";
 import { InvalidJsonError } from "../../../core/domain/errors/invalid-json-error";
