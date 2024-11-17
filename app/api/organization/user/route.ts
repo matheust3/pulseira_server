@@ -1,4 +1,4 @@
-import { UserControllerImpl } from "@/app/_lib/adapters/controllers/organization/create-user-controller";
+import { UserControllerImpl } from "@/app/_lib/adapters/controllers/organization/user-controller";
 import { dependencyContainer } from "@/app/_lib/config/dependency-container";
 import { handler } from "@/middlewares";
 
