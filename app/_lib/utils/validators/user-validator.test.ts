@@ -5,7 +5,7 @@ import { userPermissionsValidator } from "./user-permissions-validator";
 describe("userValidator", () => {
   it("should validate a valid user", async () => {
     const validUser = {
-      id: "123e4567-e89b-12d3-a456-426614174000",
+      id: "123e4567-e89b-7d3a-a456-426614174000",
       email: "test@example.com",
       password: "password123",
       name: "John Doe",
@@ -41,7 +41,7 @@ describe("userValidator", () => {
 
   it("should invalidate a user with invalid email", async () => {
     const invalidUser = {
-      id: "123e4567-e89b-12d3-a456-426614174000",
+      id: "123e4567-e89b-7d3a-a456-426614174000",
       email: "invalid-email",
       password: "password123",
       name: "John Doe",
