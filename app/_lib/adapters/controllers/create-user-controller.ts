@@ -7,6 +7,7 @@ import { ApiResponse } from "../../core/domain/models/routes/api-response";
 import { Request } from "../../core/domain/models/routes/request";
 import { User } from "../../core/domain/models/user";
 import { userValidator } from "../../utils/validators/user-validator";
+import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
 
 export class CreateUserControllerImpl implements CreateUserController {
   private readonly userRepository: UserRepository;
@@ -36,10 +37,20 @@ export class CreateUserControllerImpl implements CreateUserController {
             permissions: { id: permissionId, manageUsers: false },
           };
           const validUser = await userValidator.validate(body.user);
-          validUser.password = userPassword;
-          const user = await this.userRepository.create(validUser);
-          res.status = 201;
-          res.body = { user };
+          try {
+            await this.userRepository.findByEmail(validUser.email);
+            res.status = 400;
+            res.body = { message: "User already exists" };
+          } catch (e) {
+            if (!(e instanceof UserNotFoundError)) {
+              throw e;
+            } else {
+              validUser.password = userPassword;
+              const user = await this.userRepository.create(validUser);
+              res.status = 201;
+              res.body = { user };
+            }
+          }
         } catch (e) {
           if (e instanceof InvalidJsonError) {
             res.status = 400;

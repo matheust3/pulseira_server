@@ -8,6 +8,7 @@ import { userValidator } from "../../utils/validators/user-validator";
 import { DeepMockProxy, mock, mockDeep, MockProxy } from "jest-mock-extended";
 import { Request } from "../../core/domain/models/routes/request";
 import { ValidationError } from "yup";
+import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
 
 describe("CreateUserControllerImpl", () => {
   let createUserController: CreateUserControllerImpl;
@@ -19,6 +20,7 @@ describe("CreateUserControllerImpl", () => {
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
+    mockUserRepository.findByEmail.mockRejectedValue(new UserNotFoundError());
 
     mockUuidService = mock<UuidService>();
     mockUuidService.generateV7.mockReturnValue("uuid-v7");
@@ -157,5 +159,16 @@ describe("CreateUserControllerImpl", () => {
         }),
       }),
     );
+  });
+
+  it("should return 400 if user already exists", async () => {
+    mockRequest.json.mockResolvedValue({ user });
+    userValidator.validate = jest.fn().mockResolvedValue(user);
+    mockUserRepository.findByEmail.mockResolvedValue(user);
+
+    await createUserController.post(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(400);
+    expect(mockResponse.body).toEqual({ message: "User already exists" });
   });
 });
