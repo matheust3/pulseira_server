@@ -1,7 +1,7 @@
 import { object, ObjectSchema, string } from "yup";
 import { User } from "../../core/domain/models/user";
 import { organizationValidator } from "./organizationValidator";
-import { userPermissionsValidator } from "./userPermissionsValidator";
+import { userPermissionsValidator } from "./user-permissions-validator";
 
 export const userValidator: ObjectSchema<User> = object({
   id: string().uuid().required(),

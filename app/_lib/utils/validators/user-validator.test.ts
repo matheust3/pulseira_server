@@ -1,6 +1,6 @@
 import { userValidator } from "./user-validator";
 import { organizationValidator } from "./organizationValidator";
-import { userPermissionsValidator } from "./userPermissionsValidator";
+import { userPermissionsValidator } from "./user-permissions-validator";
 
 describe("userValidator", () => {
   it("should validate a valid user", async () => {
