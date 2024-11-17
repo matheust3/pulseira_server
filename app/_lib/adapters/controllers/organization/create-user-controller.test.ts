@@ -10,7 +10,7 @@ import { Request } from "../../../core/domain/models/routes/request";
 import { ValidationError } from "yup";
 import { UserNotFoundError } from "../../../core/domain/errors/user-not-found-error";
 
-describe("CreateUserControllerImpl - post", () => {
+describe("UserControllerImpl - post", () => {
   let createUserController: UserControllerImpl;
   let mockUserRepository: MockProxy<UserRepository>;
   let mockUuidService: MockProxy<UuidService>;
@@ -173,7 +173,7 @@ describe("CreateUserControllerImpl - post", () => {
   });
 });
 
-describe("CreateUserControllerImpl - delete", () => {
+describe("UserControllerImpl - delete", () => {
   let createUserController: UserControllerImpl;
   let mockUserRepository: MockProxy<UserRepository>;
   let mockUuidService: MockProxy<UuidService>;
