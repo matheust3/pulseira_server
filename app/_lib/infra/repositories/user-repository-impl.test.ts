@@ -41,6 +41,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
         email: true,
         name: true,
         password: false,
+        isArchived: true,
         organization: { select: { id: true, name: true } },
         permissions: { select: { id: true, manageUsers: true } },
       },
@@ -71,6 +72,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
         email: true,
         name: true,
         password: true,
+        isArchived: true,
         organization: { select: { id: true, name: true } },
         permissions: { select: { id: true, manageUsers: true } },
       },
@@ -195,6 +197,7 @@ describe("user-repository-impl.test.ts - create", () => {
         email: true,
         name: true,
         password: false,
+        isArchived: true,
         organization: { select: { id: true, name: true } },
         permissions: { select: { id: true, manageUsers: true } },
       },
@@ -250,6 +253,7 @@ describe("user-repository-impl.test.ts - update", () => {
       name: "Test User",
       organization: { id: "org1" },
       permissions: { id: "perm1", manageUsers: true },
+      isArchived: false,
     });
   });
 
@@ -259,7 +263,7 @@ describe("user-repository-impl.test.ts - update", () => {
     const updatedUser = {
       ...user,
       organization: { id: "org1", name: "Test Org" },
-      permissions: { id: "perm1", manageUsers: true },
+      permissions: { id: "perm1", manageUsers: false },
     } as PrismaUser & { organization: Organization; permissions: Permissions };
     prisma.user.findUnique.mockResolvedValue(mockDeep<PrismaUser>(user));
     prisma.user.update.mockResolvedValue(updatedUser);
@@ -273,6 +277,7 @@ describe("user-repository-impl.test.ts - update", () => {
       data: {
         name: user.name,
         email: user.email,
+        isArchived: user.isArchived,
         permissions: { update: { manageUsers: user.permissions.manageUsers } },
       },
       where: { id: user.id, organizationId },
@@ -280,6 +285,7 @@ describe("user-repository-impl.test.ts - update", () => {
         id: true,
         name: true,
         email: true,
+        isArchived: true,
         organization: { select: { id: true, name: true } },
         permissions: { select: { id: true, manageUsers: true } },
       },

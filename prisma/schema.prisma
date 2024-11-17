@@ -24,7 +24,7 @@ model Permissions {
 
 model User {
   id             String       @id @default(cuid())
-  email          String
+  email          String       @unique
   name           String
   password       String
   passwordReset  Boolean      @default(true)
@@ -34,6 +34,4 @@ model User {
   updatedAt      DateTime     @updatedAt
   permissions    Permissions?
   isArchived     Boolean      @default(false)
-
-  @@unique([email, organizationId])
 }
