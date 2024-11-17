@@ -92,12 +92,9 @@ describe("CreateUserControllerImpl", () => {
     expect(mockResponse.body).toEqual({ message: "Invalid JSON" });
   });
 
-  it("should return 500 for other errors", async () => {
+  it("should throws for other errors", async () => {
     mockRequest.json.mockRejectedValue(new Error("Unknown error"));
 
-    await createUserController.post(mockRequest, mockResponse);
-
-    expect(mockResponse.status).toBe(500);
-    expect(mockResponse.body).toEqual({ message: "Internal Server Error" });
+    await expect(createUserController.post(mockRequest, mockResponse)).rejects.toThrow("Unknown error");
   });
 });

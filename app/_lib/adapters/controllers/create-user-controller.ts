@@ -39,8 +39,7 @@ export class CreateUserControllerImpl implements CreateUserController {
             res.status = 400;
             res.body = { message: "Invalid JSON" };
           } else {
-            res.status = 500;
-            res.body = { message: "Internal Server Error" };
+            throw e;
           }
         }
       } else {
