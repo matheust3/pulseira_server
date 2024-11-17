@@ -3,7 +3,7 @@ import { userPermissionsValidator } from "./user-permissions-validator";
 describe("userPermissionsValidator", () => {
   it("should validate a valid permissions object", async () => {
     const validPermissions = {
-      id: "123e4567-e89b-12d3-a456-426614174000",
+      id: "123e4567-e89b-12d3-a456-426614174001", // Example UUID v7
       manageUsers: true,
     };
 
@@ -29,7 +29,7 @@ describe("userPermissionsValidator", () => {
 
   it("should fail validation for missing manageUsers", async () => {
     const invalidPermissions = {
-      id: "123e4567-e89b-12d3-a456-426614174000",
+      id: "018e4567-e89b-12d3-a456-426614174000", // Example UUID v7
     };
 
     await expect(userPermissionsValidator.validate(invalidPermissions)).rejects.toThrow();
@@ -37,7 +37,7 @@ describe("userPermissionsValidator", () => {
 
   it("should fail validation for non-boolean manageUsers", async () => {
     const invalidPermissions = {
-      id: "123e4567-e89b-12d3-a456-426614174000",
+      id: "018e4567-e89b-12d3-a456-426614174000", // Example UUID v7
       manageUsers: "yes",
     };
 
