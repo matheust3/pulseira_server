@@ -21,4 +21,10 @@ export interface UserRepository {
    * @param organizationId The organization ID of the user
    */
   update(user: User, organizationId: string): Promise<User>;
+
+  /**
+   * Get all users in an organization
+   * @param organizationId The organization ID of the users
+   */
+  getAllInOrganization(organizationId: string): Promise<User[]>;
 }

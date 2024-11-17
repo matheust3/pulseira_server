@@ -317,3 +317,85 @@ describe("user-repository-impl.test.ts - update", () => {
     await expect(sut.update(user, organizationId)).rejects.toThrow("User does not have permissions");
   });
 });
+
+describe("user-repository-impl.test.ts - getAllInOrganization", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+  });
+
+  test("returns all users in the organization", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    const users = [
+      {
+        id: "1",
+        email: "user1@example.com",
+        name: "User One",
+        isArchived: false,
+        organization: { id: "org1", name: "Test Org" },
+        permissions: { id: "perm1", manageUsers: true },
+      },
+      {
+        id: "2",
+        email: "user2@example.com",
+        name: "User Two",
+        isArchived: false,
+        organization: { id: "org1", name: "Test Org" },
+        permissions: { id: "perm2", manageUsers: false },
+      },
+    ];
+    prisma.user.findMany.mockResolvedValue(mockDeep<PrismaUser[]>([...users]));
+
+    //! Act
+    const result = await sut.getAllInOrganization(organizationId);
+
+    //! Assert
+    expect(result).toEqual(users);
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { organizationId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+  });
+
+  test("throws error if user.permissions is null", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    const users = [
+      {
+        id: "1",
+        email: "user1@example.com",
+        name: "User One",
+        isArchived: false,
+        organization: { id: "org1", name: "Test Org" },
+        permissions: null,
+      },
+    ];
+    prisma.user.findMany.mockResolvedValue(mockDeep<PrismaUser[]>(users));
+
+    //! Act & Assert
+    await expect(sut.getAllInOrganization(organizationId)).rejects.toThrow("User does not have permissions");
+  });
+
+  test("ensure return empty array if no users found", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    prisma.user.findMany.mockResolvedValue([]);
+
+    //! Act
+    const result = await sut.getAllInOrganization(organizationId);
+
+    //! Assert
+    expect(result).toEqual([]);
+  });
+});
