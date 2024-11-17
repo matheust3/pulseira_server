@@ -15,6 +15,13 @@ model Organization {
   users     User[]
 }
 
+model Permission {
+  id          String  @id @default(cuid())
+  manageUsers Boolean @default(false)
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+}
+
 model User {
   id             String       @id @default(cuid())
   email          String       @unique
@@ -25,4 +32,5 @@ model User {
   organizationId String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  permission     Permission?
 }
