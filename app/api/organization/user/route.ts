@@ -1,8 +1,8 @@
-import { CreateUserControllerImpl } from "@/app/_lib/adapters/controllers/create-user-controller";
+import { UserControllerImpl } from "@/app/_lib/adapters/controllers/organization/create-user-controller";
 import { dependencyContainer } from "@/app/_lib/config/dependency-container";
 import { handler } from "@/middlewares";
 
-const controller = new CreateUserControllerImpl({
+const controller = new UserControllerImpl({
   userRepository: dependencyContainer.repositories.userRepository,
   uuidService: dependencyContainer.services.uuidService,
 });

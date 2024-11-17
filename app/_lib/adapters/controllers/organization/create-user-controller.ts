@@ -1,15 +1,15 @@
 import { ValidationError } from "yup";
-import { CreateUserController } from "../../core/application/controllers/create-user-controller";
-import { UuidService } from "../../core/application/gateways/uuid-service";
-import { UserRepository } from "../../core/application/repositories/user-repository";
-import { InvalidJsonError } from "../../core/domain/errors/invalid-json-error";
-import { ApiResponse } from "../../core/domain/models/routes/api-response";
-import { Request } from "../../core/domain/models/routes/request";
-import { User } from "../../core/domain/models/user";
-import { userValidator } from "../../utils/validators/user-validator";
-import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
+import { UserController } from "../../../core/application/controllers/organization/user-controller";
+import { UuidService } from "../../../core/application/gateways/uuid-service";
+import { UserRepository } from "../../../core/application/repositories/user-repository";
+import { InvalidJsonError } from "../../../core/domain/errors/invalid-json-error";
+import { ApiResponse } from "../../../core/domain/models/routes/api-response";
+import { Request } from "../../../core/domain/models/routes/request";
+import { User } from "../../../core/domain/models/user";
+import { userValidator } from "../../../utils/validators/user-validator";
+import { UserNotFoundError } from "../../../core/domain/errors/user-not-found-error";
 
-export class CreateUserControllerImpl implements CreateUserController {
+export class UserControllerImpl implements UserController {
   private readonly userRepository: UserRepository;
   private readonly uuidService: UuidService;
 

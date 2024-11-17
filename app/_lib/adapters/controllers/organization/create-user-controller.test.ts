@@ -1,17 +1,17 @@
-import { CreateUserControllerImpl } from "./create-user-controller";
-import { UuidService } from "../../core/application/gateways/uuid-service";
-import { UserRepository } from "../../core/application/repositories/user-repository";
-import { InvalidJsonError } from "../../core/domain/errors/invalid-json-error";
-import { ApiResponse } from "../../core/domain/models/routes/api-response";
-import { User } from "../../core/domain/models/user";
-import { userValidator } from "../../utils/validators/user-validator";
+import { UserControllerImpl } from "./create-user-controller";
+import { UuidService } from "../../../core/application/gateways/uuid-service";
+import { UserRepository } from "../../../core/application/repositories/user-repository";
+import { InvalidJsonError } from "../../../core/domain/errors/invalid-json-error";
+import { ApiResponse } from "../../../core/domain/models/routes/api-response";
+import { User } from "../../../core/domain/models/user";
+import { userValidator } from "../../../utils/validators/user-validator";
 import { DeepMockProxy, mock, mockDeep, MockProxy } from "jest-mock-extended";
-import { Request } from "../../core/domain/models/routes/request";
+import { Request } from "../../../core/domain/models/routes/request";
 import { ValidationError } from "yup";
-import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
+import { UserNotFoundError } from "../../../core/domain/errors/user-not-found-error";
 
 describe("CreateUserControllerImpl", () => {
-  let createUserController: CreateUserControllerImpl;
+  let createUserController: UserControllerImpl;
   let mockUserRepository: MockProxy<UserRepository>;
   let mockUuidService: MockProxy<UuidService>;
   let mockRequest: MockProxy<Request>;
@@ -25,7 +25,7 @@ describe("CreateUserControllerImpl", () => {
     mockUuidService = mock<UuidService>();
     mockUuidService.generateV7.mockReturnValue("uuid-v7");
 
-    createUserController = new CreateUserControllerImpl({
+    createUserController = new UserControllerImpl({
       userRepository: mockUserRepository,
       uuidService: mockUuidService,
     });
