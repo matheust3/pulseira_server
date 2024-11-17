@@ -26,6 +26,7 @@ export class CreateUserControllerImpl implements CreateUserController {
         try {
           const body = (await req.json()) as { user: User };
           const userId = this.uuidService.generateV7();
+          const userPassword = this.uuidService.generateV7();
           const permissionId = this.uuidService.generateV7();
 
           body.user = {
@@ -35,6 +36,7 @@ export class CreateUserControllerImpl implements CreateUserController {
             permissions: { id: permissionId, manageUsers: false },
           };
           const validUser = await userValidator.validate(body.user);
+          validUser.password = userPassword;
           const user = await this.userRepository.create(validUser);
           res.status = 201;
           res.body = { user };

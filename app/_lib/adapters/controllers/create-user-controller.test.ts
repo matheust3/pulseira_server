@@ -121,4 +121,41 @@ describe("CreateUserControllerImpl", () => {
     expect(mockResponse.status).toBe(201);
     expect(mockResponse.body).toEqual({ user });
   });
+
+  it("should call userRepository.create with correct values", async () => {
+    mockRequest.json.mockResolvedValue({ user });
+    mockUserRepository.create.mockResolvedValue(user);
+    mockUuidService.generateV7
+      .mockReturnValueOnce("not-valid-user-uuid-v7")
+      .mockReturnValueOnce("password-uuid-v7")
+      .mockReturnValueOnce("not-valid-permission-uuid-v7");
+    userValidator.validate = jest.fn().mockResolvedValue({
+      ...user,
+      id: "user-uuid-v7",
+      permissions: { id: "permission-uuid-v7", manageUsers: false },
+      organizationValidator: { id: "organization-uuid-v7" },
+    });
+
+    await createUserController.post(mockRequest, mockResponse);
+
+    expect(userValidator.validate).toHaveBeenCalledWith({
+      ...user,
+      id: "not-valid-user-uuid-v7",
+      permissions: { id: "not-valid-permission-uuid-v7", manageUsers: false },
+    });
+
+    expect(mockUserRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "user-uuid-v7",
+        email: user.email,
+        password: "password-uuid-v7", // Assuming password is set to a generated UUID
+        name: user.name,
+        organization: user.organization,
+        permissions: expect.objectContaining({
+          id: "permission-uuid-v7",
+          manageUsers: false,
+        }),
+      }),
+    );
+  });
 });
