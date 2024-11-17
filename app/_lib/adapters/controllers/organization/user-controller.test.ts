@@ -37,6 +37,7 @@ describe("UserControllerImpl - post", () => {
       name: "Test User",
       organization: { id: "org-id", name: "org-name" },
       permissions: { id: "perm-id", manageUsers: false },
+      isArchived: false,
     };
 
     mockRequest = mock<Request>({
@@ -197,6 +198,7 @@ describe("UserControllerImpl - put", () => {
       name: "Test User",
       organization: { id: "org-id", name: "org-name" },
       permissions: { id: "perm-id", manageUsers: false },
+      isArchived: false,
     };
 
     mockRequest = mock<Request>({
