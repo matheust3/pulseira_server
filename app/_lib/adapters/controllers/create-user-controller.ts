@@ -1,3 +1,4 @@
+import { ValidationError } from "yup";
 import { CreateUserController } from "../../core/application/controllers/create-user-controller";
 import { UuidService } from "../../core/application/gateways/uuid-service";
 import { UserRepository } from "../../core/application/repositories/user-repository";
@@ -41,6 +42,9 @@ export class CreateUserControllerImpl implements CreateUserController {
           if (e instanceof InvalidJsonError) {
             res.status = 400;
             res.body = { message: "Invalid JSON" };
+          } else if (e instanceof ValidationError) {
+            res.status = 400;
+            res.body = { message: e.errors.join(", ") };
           } else {
             throw e;
           }

@@ -7,6 +7,7 @@ import { User } from "../../core/domain/models/user";
 import { userValidator } from "../../utils/validators/user-validator";
 import { DeepMockProxy, mock, mockDeep, MockProxy } from "jest-mock-extended";
 import { Request } from "../../core/domain/models/routes/request";
+import { ValidationError } from "yup";
 
 describe("CreateUserControllerImpl", () => {
   let createUserController: CreateUserControllerImpl;
@@ -90,6 +91,18 @@ describe("CreateUserControllerImpl", () => {
 
     expect(mockResponse.status).toBe(400);
     expect(mockResponse.body).toEqual({ message: "Invalid JSON" });
+  });
+
+  it("should return 400 if validation fails", async () => {
+    const validationError = new ValidationError("Validation error", null, "field");
+    validationError.errors = ["Validation error"];
+    mockRequest.json.mockResolvedValue({ user });
+    userValidator.validate = jest.fn().mockRejectedValue(validationError);
+
+    await createUserController.post(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(400);
+    expect(mockResponse.body).toEqual({ message: "Validation error" });
   });
 
   it("should throws for other errors", async () => {
