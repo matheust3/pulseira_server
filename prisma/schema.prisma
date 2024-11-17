@@ -15,7 +15,7 @@ model Organization {
   users     User[]
 }
 
-model Permission {
+model Permissions {
   id          String  @id @default(cuid())
   manageUsers Boolean @default(false)
   userId      String  @unique
@@ -32,5 +32,5 @@ model User {
   organizationId String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  permission     Permission?
+  permissions    Permissions?
 }
