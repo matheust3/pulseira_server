@@ -1,3 +1,5 @@
+import { User } from "../user";
+
 export type Url = {
   pathname: string;
 };
@@ -6,8 +8,8 @@ export type RemoteAddress = {
 };
 
 export type Authorization = {
-  userId?: string;
   token?: string;
+  user: User;
 };
 export interface Request {
   authorization: Authorization;
