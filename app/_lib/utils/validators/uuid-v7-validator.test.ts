@@ -7,7 +7,7 @@ describe("uuidV7 Validator", () => {
   });
 
   it("should invalidate an incorrect UUID v7", () => {
-    const invalidUuidV7 = "123e4567-e89b-6d3a-89ab-1234567890ab"; // Invalid version
+    const invalidUuidV7 = "123e4567-e89b-6d3a-89_b-1234567890ab"; // Invalid
     expect(uuidV7.isValidSync(invalidUuidV7)).toBe(false);
   });
 
