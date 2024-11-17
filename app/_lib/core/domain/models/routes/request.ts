@@ -9,7 +9,7 @@ export type RemoteAddress = {
 
 export type Authorization = {
   token?: string;
-  user: User;
+  user?: User;
 };
 export interface Request {
   authorization: Authorization;
