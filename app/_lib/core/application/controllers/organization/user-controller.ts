@@ -4,4 +4,5 @@ import { ApiController } from "../api-controller";
 
 export interface UserController extends ApiController {
   post(req: Request, res: ApiResponse): Promise<void>;
+  delete(req: Request, res: ApiResponse): Promise<void>;
 }

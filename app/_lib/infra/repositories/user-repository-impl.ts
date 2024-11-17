@@ -18,6 +18,10 @@ export class UserRepositoryImpl implements UserRepository {
     return bcrypt.hash(password, 10);
   }
 
+  async delete(userId: string, organizationId: string): Promise<void> {
+    await this.prisma.user.delete({ where: { id: userId, organizationId }, include: { permissions: true } });
+  }
+
   async create(user: User): Promise<User> {
     const hashedPassword = await this.hashPassword(user.password);
 

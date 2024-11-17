@@ -234,3 +234,38 @@ describe("user-repository-impl.test.ts - create", () => {
     await expect(sut.create(user)).rejects.toThrow("Password is required to hash it");
   });
 });
+
+describe("user-repository-impl.test.ts - delete", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+  });
+
+  test("deletes a user with the given userId and organizationId", async () => {
+    //! Arrange
+    const userId = "1";
+    const organizationId = "org1";
+
+    //! Act
+    await sut.delete(userId, organizationId);
+
+    //! Assert
+    expect(prisma.user.delete).toHaveBeenCalledWith({
+      where: { id: userId, organizationId },
+      include: { permissions: true },
+    });
+  });
+
+  test("throws an error if user does not exist", async () => {
+    //! Arrange
+    const userId = "nonexistent";
+    const organizationId = "org1";
+    prisma.user.delete.mockRejectedValue(new Error("User not found"));
+
+    //! Act & Assert
+    await expect(sut.delete(userId, organizationId)).rejects.toThrow("User not found");
+  });
+});
