@@ -37,6 +37,9 @@ export class UserControllerImpl implements UserController {
           } else if (e instanceof ValidationError) {
             res.status = 400;
             res.body = { message: e.errors.join(", ") };
+          } else if (e instanceof UserNotFoundError) {
+            res.status = 400;
+            res.body = { message: "User not found" };
           } else {
             throw e;
           }

@@ -274,4 +274,15 @@ describe("UserControllerImpl - put", () => {
 
     await expect(updateUserController.put(mockRequest, mockResponse)).rejects.toThrow("Unknown error");
   });
+
+  it("should return 400 if userRepository.update throws UserNotFoundError", async () => {
+    mockRequest.json.mockResolvedValue({ user });
+    userValidator.validate = jest.fn().mockResolvedValue(user);
+    mockUserRepository.update.mockRejectedValue(new UserNotFoundError());
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(400);
+    expect(mockResponse.body).toEqual({ message: "User not found" });
+  });
 });
