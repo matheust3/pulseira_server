@@ -5,16 +5,16 @@ import { userPermissionsValidator } from "./user-permissions-validator";
 describe("userValidator", () => {
   it("should validate a valid user", async () => {
     const validUser = {
-      id: "123e4567-e89b-7d3a-a456-426614174000",
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
       email: "test@example.com",
       password: "password123",
       name: "John Doe",
       organization: await organizationValidator.validate({
-        id: "123e4567-e89b-12d3-a456-426614174001",
+        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
         name: "OrgName",
       }),
       permissions: await userPermissionsValidator.validate({
-        id: "123e4567-e89b-12d3-a456-426614174002",
+        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
         manageUsers: true,
       }),
     };
