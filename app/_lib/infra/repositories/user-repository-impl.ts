@@ -20,13 +20,18 @@ export class UserRepositoryImpl implements UserRepository {
         name: true,
         password: options?.withPassHash === true || false,
         organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
       },
     });
 
     if (!user) {
       throw new UserNotFoundError();
     } else {
-      return user;
+      if (user.permissions === null) {
+        throw new Error("User does not have permissions");
+      } else {
+        return { ...user, permissions: user.permissions };
+      }
     }
   }
 

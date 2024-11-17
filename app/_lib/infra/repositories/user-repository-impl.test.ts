@@ -19,7 +19,13 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
   test("returns user without password hash by default", async () => {
     //! Arrange
     const email = "test@example.com";
-    const user = { id: "1", email, name: "Test User", organization: { id: "org1", name: "Test Org" } };
+    const user = {
+      id: "1",
+      email,
+      name: "Test User",
+      organization: { id: "org1", name: "Test Org" },
+      permissions: { id: "perm1", manageUsers: true },
+    };
     prisma.user.findUnique.mockResolvedValue(mock<User>(user));
 
     //! Act
@@ -35,6 +41,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
         name: true,
         password: false,
         organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
       },
     });
   });
@@ -64,6 +71,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
         name: true,
         password: true,
         organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
       },
     });
   });
@@ -75,6 +83,22 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
 
     //! Act & Assert
     await expect(sut.findByEmail(email)).rejects.toThrow(UserNotFoundError);
+  });
+
+  test("throws error if user.permissions is null", async () => {
+    //! Arrange
+    const email = "test@example.com";
+    const user = {
+      id: "1",
+      email,
+      name: "Test User",
+      organization: { id: "org1", name: "Test Org" },
+      permissions: null,
+    };
+    prisma.user.findUnique.mockResolvedValue(mock<User>(user));
+
+    //! Act & Assert
+    await expect(sut.findByEmail(email)).rejects.toThrow("User does not have permissions");
   });
 });
 
