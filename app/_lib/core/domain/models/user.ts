@@ -8,4 +8,5 @@ export interface User {
   password?: string;
   permissions: Permissions;
   organization: Organization;
+  isArchived: boolean;
 }
