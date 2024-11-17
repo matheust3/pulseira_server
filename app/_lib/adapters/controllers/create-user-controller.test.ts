@@ -97,4 +97,15 @@ describe("CreateUserControllerImpl", () => {
 
     await expect(createUserController.post(mockRequest, mockResponse)).rejects.toThrow("Unknown error");
   });
+
+  it("should assign user details correctly", async () => {
+    mockRequest.json.mockResolvedValue(user);
+    userValidator.validate = jest.fn().mockResolvedValue(user);
+    mockUserRepository.create.mockResolvedValue(user);
+
+    await createUserController.post(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(201);
+    expect(mockResponse.body).toEqual({ user });
+  });
 });

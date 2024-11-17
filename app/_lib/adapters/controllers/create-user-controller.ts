@@ -27,9 +27,12 @@ export class CreateUserControllerImpl implements CreateUserController {
           const userId = this.uuidService.generateV7();
           const permissionId = this.uuidService.generateV7();
 
-          body.user.id = userId;
-          body.user.organization = req.authorization.user.organization;
-          body.user.permissions = { id: permissionId, manageUsers: false };
+          body.user = {
+            ...body.user,
+            id: userId,
+            organization: req.authorization.user.organization,
+            permissions: { id: permissionId, manageUsers: false },
+          };
           const validUser = await userValidator.validate(body.user);
           const user = await this.userRepository.create(validUser);
           res.status = 201;
