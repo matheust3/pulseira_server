@@ -36,15 +36,17 @@ jobs:
       run: |
         ssh -v -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} <<'ENDSSH'
         echo "teste"
+        cd ${{ secrets.SERVER_RUNNER_DESTINATION }}
+        pwd
+        ls
         ENDSSH
 
     # stop docker services on vps
     - name: stop Docker services (server runner) and remove old files
       run: |
         ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} <<'ENDSSH'
-        cd ${{ secrets.SERVER_RUNNER_DESTINATION }}
-        echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S docker compose down
-        echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S rm -rf ./*
+        cd ${{ secrets.SERVER_RUNNER_DESTINATION }} && echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S docker compose down
+        cd ${{ secrets.SERVER_RUNNER_DESTINATION }} && echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S rm -rf ./*
         ENDSSH
 
     # Transfere os arquivos para o servidor VPS
