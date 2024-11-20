@@ -44,9 +44,11 @@ jobs:
     # stop docker services on vps
     - name: stop Docker services (server runner) and remove old files
       run: |
-        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} <<'ENDSSH'
-        cd ${{ secrets.SERVER_RUNNER_DESTINATION }} && echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S docker compose down
-        cd ${{ secrets.SERVER_RUNNER_DESTINATION }} && echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S rm -rf ./*
+        ssh -v ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} <<'ENDSSH'
+        cd ${{ secrets.SERVER_RUNNER_DESTINATION }} 
+        echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S docker compose down
+        cd ${{ secrets.SERVER_DESTINATION }} 
+        echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S rm -rf ./*
         ENDSSH
 
     # Transfere os arquivos para o servidor VPS
