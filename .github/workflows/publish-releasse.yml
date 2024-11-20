@@ -1,0 +1,34 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Executa o workflow para tags que começam com 'v'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout do código
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Obter a mensagem da tag
+      - name: Get Tag Message
+        id: tag_message
+        run: |
+          TAG_NAME=$(echo "${GITHUB_REF}" | sed 's|refs/tags/||')
+          TAG_MESSAGE=$(git for-each-ref --format='%(contents)' refs/tags/${TAG_NAME})
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_ENV
+          echo "tag_message<<EOF" >> $GITHUB_ENV
+          echo "${TAG_MESSAGE}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # Criar a release usando softprops/action-gh-release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body: ${{ env.tag_message }}
