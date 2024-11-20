@@ -47,3 +47,12 @@ jobs:
     - name: Cleanup on VPS
       run: |
         ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ secrets.SERVER_DESTINATION }} && rm -rf old_files"
+   
+    # Restart docker services on vps
+    - name: Restart Docker services (server runner)
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} <<'ENDSSH'
+        cd ${{ secrets.SERVER_RUNNER_DESTINATION }}
+        echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S docker compose down
+        echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S docker compose up -d
+        ENDSSH
