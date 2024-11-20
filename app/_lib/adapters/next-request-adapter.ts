@@ -27,7 +27,8 @@ class NextRequestAdapter implements Request {
       ip: req.ip,
     };
     this.authorization = {
-      userId: undefined,
+      token: undefined,
+      user: undefined,
     };
 
     if (req.body) {

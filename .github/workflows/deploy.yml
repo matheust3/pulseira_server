@@ -1,0 +1,63 @@
+name: Deploy Next.js App
+
+on:
+  release:
+    types:
+      - published # Executa o workflow quando uma release for publicada
+  push:
+    tags:
+      - 'v*' # Executa o workflow quando uma tag que começa com 'v' é empurrada
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # Checkout do repositório
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    # Configura o SSH para o servidor VPS
+    - name: Set up SSH key
+      run: |
+        env
+        echo "creating .shh folder"
+        mkdir -p ~/.ssh
+        echo "pass ssh private key to id_rsa"
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "set permissions do id_rsa"
+        chmod 600 ~/.ssh/id_rsa
+        echo "pass ssh server to know_hosts"
+        ssh-keyscan -p 22 ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts        
+    
+    # Opcional: Test server conection
+    - name: Test SSH connection
+      run: |
+        ssh -v -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} <<'ENDSSH'
+        echo "teste"
+        ENDSSH
+
+    # Instala dependências do Node.js
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    # Instala dependências do Next.js
+    - name: Install dependencies
+      run: npm install
+
+    # Tenta compilar os arquivos do Next.js
+    - name: Build Next.js
+      run: npm run build
+
+    # Transfere os arquivos para o servidor VPS
+    - name: Deploy to VPS
+      run: |
+        rsync -avz --delete . ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.SERVER_DESTINATION }}
+
+    # Opcional: Limpeza no servidor (se necessário)
+    - name: Cleanup on VPS
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ secrets.SERVER_DESTINATION }} && rm -rf old_files"
