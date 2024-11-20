@@ -38,20 +38,6 @@ jobs:
         echo "teste"
         ENDSSH
 
-    # Instala dependências do Node.js
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-
-    # Instala dependências do Next.js
-    - name: Install dependencies
-      run: npm install
-
-    # Tenta compilar os arquivos do Next.js
-    - name: Build Next.js
-      run: npm run build
-
     # Transfere os arquivos para o servidor VPS
     - name: Deploy to VPS
       run: |
