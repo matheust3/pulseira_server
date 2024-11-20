@@ -48,7 +48,7 @@ jobs:
         cd ${{ secrets.SERVER_RUNNER_DESTINATION }} 
         echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S docker compose down
         cd ${{ secrets.SERVER_DESTINATION }} 
-        echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S rm -rf ./*
+        echo ${{ secrets.SERVER_SUDO_PASSWORD }} | sudo -S rm -rf ./* ./.[!.]*
         ENDSSH
 
     # Transfere os arquivos para o servidor VPS
