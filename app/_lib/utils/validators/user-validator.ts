@@ -1,24 +1,15 @@
-import { ObjectSchema, array, date, number, object, string } from 'yup'
-import { User } from '../../core/domain/models/user'
+import { bool, object, ObjectSchema, string } from "yup";
+import { User } from "../../core/domain/models/user";
+import { organizationValidator } from "./organization-validator";
+import { userPermissionsValidator } from "./user-permissions-validator";
+import { uuidV7 } from "./uuid-v7-validator";
 
 export const userValidator: ObjectSchema<User> = object({
-  id: string().default(''),
+  id: uuidV7.required(),
   email: string().email().required(),
+  password: string().optional(),
   name: string().required(),
-  images: array().required(),
-  searchDistance: number().required().max(200),
-  // lass than 18
-  birthdate: date()
-    .required()
-    .max(
-      new Date(new Date().setFullYear(new Date().getFullYear() - 18)),
-      'birthdate must be greater than or equal to 18 years old',
-    ),
-  gender: string()
-    .required()
-    .matches(/(male|female)/),
-  description: string().ensure().max(500),
-  genderInterest: string()
-    .required()
-    .matches(/(male|female|everyone)/),
-})
+  organization: organizationValidator.required(),
+  permissions: userPermissionsValidator.required(),
+  isArchived: bool().required(),
+});

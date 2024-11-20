@@ -1,105 +1,58 @@
-import { Resend } from 'resend'
-import { EmailProvider } from '../core/application/gateways/email-provider'
-import { EmailTokenRepository } from '../core/application/gateways/email-token-repository'
-import { prisma } from '../infra/db/prisma-client'
-import { EmailTokenRepositoryImpl } from '../infra/repositories/email-token-repository-impl'
-import { ResendEmailProvider } from '../infra/gateways/resend-email-provider'
-import { JwtServiceImpl } from '../infra/services/jwt-service-impl'
-import { JwtService } from '../core/application/gateways/jwt-service'
-import { LoadMiddlewares } from './load-middlewares'
-import { LoadUseCases } from './load-use-cases'
-import { AccountRepositoryImpl } from '../infra/repositories/account-repository-impl'
-import { UserRepositoryImpl } from '../infra/repositories/user-repository-impl'
-import { ImageRepositoryImpl } from '../infra/repositories/image-repository-impl'
-import { UuidServiceImpl } from '../infra/services/uuid-service-impl'
-import { S3Client } from '@aws-sdk/client-s3'
-import { LocationRepositoryImpl } from '../infra/repositories/location-repository-impl'
-import { InteractionRepositoryImpl } from '../infra/repositories/interaction-repository-impl'
+import { Resend } from "resend";
+import { prisma } from "../infra/db/prisma-client";
+import { LoadGateways } from "./load-gateways";
+import { LoadMiddlewares } from "./load-middlewares";
+import { LoadRepositories } from "./load-repositories";
+import { LoadServices } from "./load-services";
 
 export class DependencyContainer {
   // eslint-disable-next-line no-use-before-define
-  private static instance: DependencyContainer
-  // Middleware
-  private readonly loadMiddlewares: LoadMiddlewares
-  public get middlewares(): LoadMiddlewares {
-    return this.loadMiddlewares
-  }
+  private static instance: DependencyContainer;
 
-  // UseCases
-  private readonly loadUseCases: LoadUseCases
-  public get useCases(): LoadUseCases {
-    return this.loadUseCases
+  // Middleware
+  private readonly loadMiddlewares: LoadMiddlewares;
+  public get middlewares(): LoadMiddlewares {
+    return this.loadMiddlewares;
   }
 
   // Repositories
-  private readonly emailTokenRepository: EmailTokenRepository
-  // Providers
-  private readonly emailProvider: EmailProvider
+  private readonly loadRepositories: LoadRepositories;
+  public get repositories(): LoadRepositories {
+    return this.loadRepositories;
+  }
+
+  // Gateways
+  private readonly loadGateways: LoadGateways;
+  public get gateways(): LoadGateways {
+    return this.loadGateways;
+  }
+
   // Services
-  private readonly jwtService: JwtService
+  private readonly loadServices: LoadServices;
+  public get services(): LoadServices {
+    return this.loadServices;
+  }
 
   private constructor() {
-    const prismaClient = prisma
-    const resend = new Resend(process.env.RESEND_API_KEY)
+    // Load repositories
+    this.loadRepositories = new LoadRepositories({ prismaClient: prisma });
 
-    this.jwtService = new JwtServiceImpl()
-    const uuidService = new UuidServiceImpl()
-    const s3Client = new S3Client({
-      region: process.env.S3_REGION,
-      credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY,
-        secretAccessKey: process.env.S3_SECRET_KEY,
-      },
-      endpoint: process.env.S3_ENDPOINT,
-      forcePathStyle: true,
-    })
+    // Load gateways
+    this.loadGateways = new LoadGateways({ emailProvider: new Resend(process.env.RESEND_API_KEY) });
 
-    const imageRepository = new ImageRepositoryImpl({
-      prismaClient,
-      s3Client,
-      uuidService,
-    })
-    const accountRepository = new AccountRepositoryImpl({ prismaClient })
-    const userRepository = new UserRepositoryImpl({
-      prisma: prismaClient,
-      imageRepository,
-    })
-    this.emailTokenRepository = new EmailTokenRepositoryImpl(prismaClient)
-    this.emailProvider = new ResendEmailProvider(resend)
-    const locationRepository = new LocationRepositoryImpl({ prismaClient })
-    const interactionRepository = new InteractionRepositoryImpl({
-      prismaClient,
-      imageRepository,
-    })
+    // Load services
+    this.loadServices = new LoadServices({ userRepository: this.loadRepositories.userRepository });
 
-    // UseCases
-    this.loadUseCases = new LoadUseCases({
-      emailTokenRepository: this.emailTokenRepository,
-      emailProvider: this.emailProvider,
-      jwtService: this.jwtService,
-      accountRepository,
-      userRepository,
-      imageRepository,
-      interactionRepository,
-      locationRepository,
-    })
-    // Middlewares
-    this.loadMiddlewares = new LoadMiddlewares({
-      authWithEmailOnly: this.useCases.authWithEmailOnly,
-      getTokenPayload: this.useCases.getTokenPayloadUseCase,
-    })
+    // Load middlewares
+    this.loadMiddlewares = new LoadMiddlewares({ authService: this.loadServices.authService });
   }
 
   public static getInstance(): DependencyContainer {
     if (!DependencyContainer.instance) {
-      DependencyContainer.instance = new DependencyContainer()
+      DependencyContainer.instance = new DependencyContainer();
     }
-    return DependencyContainer.instance
-  }
-
-  public getJwtService(): JwtService {
-    return this.jwtService
+    return DependencyContainer.instance;
   }
 }
 
-export const dependencyContainer = DependencyContainer.getInstance()
+export const dependencyContainer = DependencyContainer.getInstance();

@@ -1,387 +1,401 @@
-import {
-  PrismaClient,
-  User as PrismaUser,
-  Image as PrismaImage,
-  Description,
-} from '@prisma/client'
-import { MockProxy, DeepMockProxy, mockDeep, mock } from 'jest-mock-extended'
-import { UserRepositoryImpl } from './user-repository-impl'
-import { User } from '../../core/domain/models/user'
-import { ImageRepository } from '../../core/application/gateways/image-repository'
+import { DeepMockProxy, mock, mockDeep, MockProxy } from "jest-mock-extended";
+import { UserRepository } from "../../core/application/repositories/user-repository";
+import { UserRepositoryImpl } from "./user-repository-impl";
+import { Organization, Permissions, PrismaClient, User as PrismaUser } from "@prisma/client";
+import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
+import bcrypt from "bcrypt";
+import { User } from "../../core/domain/models/user";
 
-describe('user-repository-impl.test.ts - create', () => {
-  let prisma: DeepMockProxy<PrismaClient>
-  let sut: UserRepositoryImpl
-  let user: MockProxy<User>
+jest.mock("bcrypt");
+
+describe("user-repository-impl.test.ts - findByEmail", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
 
   beforeEach(() => {
-    user = mock<User>({ id: '' })
-    prisma = mockDeep<PrismaClient>()
-    prisma.user.create.mockResolvedValue({
-      email: 'any email',
-      name: 'any name',
-      birthdate: new Date(),
-      gender: 'any gender',
-      genderInterest: 'any gender interest',
-      id: 'any id',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      searchDistance: 100,
-    })
-    sut = new UserRepositoryImpl({
-      prisma,
-      imageRepository: mock<ImageRepository>(),
-    })
-  })
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+  });
 
-  test('ensure call prisma with correct params', async () => {
+  test("returns user without password hash by default", async () => {
     //! Arrange
+    const email = "test@example.com";
+    const user = {
+      id: "1",
+      email,
+      name: "Test User",
+      organization: { id: "org1", name: "Test Org" },
+      permissions: { id: "perm1", manageUsers: true },
+    };
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>(user));
+
     //! Act
-    await sut.create(user)
+    const result = await sut.findByEmail(email);
+
     //! Assert
+    expect(result).toEqual(user);
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: false,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+  });
+
+  test("returns user with password hash if option is set", async () => {
+    //! Arrange
+    const email = "test@example.com";
+    const user = {
+      id: "1",
+      email,
+      name: "Test User",
+      password: "hashedPassword",
+      organization: { id: "org1", name: "Test Org" },
+    };
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>(user));
+
+    //! Act
+    const result = await sut.findByEmail(email, { withPassHash: true });
+
+    //! Assert
+    expect(result).toEqual(user);
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+  });
+
+  test("throws UserNotFoundError if user does not exist", async () => {
+    //! Arrange
+    const email = "nonexistent@example.com";
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    //! Act & Assert
+    await expect(sut.findByEmail(email)).rejects.toThrow(UserNotFoundError);
+  });
+
+  test("throws error if user.permissions is null", async () => {
+    //! Arrange
+    const email = "test@example.com";
+    const user = {
+      id: "1",
+      email,
+      name: "Test User",
+      organization: { id: "org1", name: "Test Org" },
+      permissions: null,
+    };
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>(user));
+
+    //! Act & Assert
+    await expect(sut.findByEmail(email)).rejects.toThrow("User does not have permissions");
+  });
+});
+
+describe("user-repository-impl.test.ts - updatePassword", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>());
+  });
+
+  test("ensure call prisma with correct params", async () => {
+    //! Arrange
+    const email = "test@example.com";
+    const password = "newPassword123";
+    const hashedPassword = "$2b$10$FKqivT2TYUwXBLiXRXz3Ee19hpYM9zbI.MtpWZHv9yn7DWaAnPmtm";
+    (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+    //! Act
+    await sut.updatePassword(email, password);
+
+    //! Assert
+    expect(bcrypt.hash).toHaveBeenCalledWith(password, 10);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        passwordReset: true,
+      },
+    });
+  });
+
+  test("throws UserNotFoundError if user does not exist", async () => {
+    //! Arrange
+    const email = "nonexistent@example.com";
+    const password = "newPassword123";
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    //! Act & Assert
+    await expect(sut.updatePassword(email, password)).rejects.toThrow(UserNotFoundError);
+  });
+});
+
+describe("user-repository-impl.test.ts - create", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+  let user: MockProxy<User>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+
+    user = mock<User>({
+      id: "1",
+      email: "test@example.com",
+      name: "Test User",
+      password: "plainPassword",
+      organization: { id: "org1" },
+      permissions: { id: "perm1", manageUsers: true },
+    });
+  });
+
+  test("creates a user with hashed password", async () => {
+    //! Arrange
+    const hashedPassword = "$2b$10$FKqivT2TYUwXBLiXRXz3Ee19hpYM9zbI.MtpWZHv9yn7DWaAnPmtm";
+    (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+    const createdUser = {
+      ...user,
+      organization: { id: "org1", name: "Test Org" },
+      permissions: { id: "perm1", manageUsers: true },
+    } as PrismaUser & { organization: Organization; permissions: Permissions };
+    prisma.user.create.mockResolvedValue(createdUser);
+
+    //! Act
+    const result = await sut.create(user);
+
+    //! Assert
+    expect(bcrypt.hash).toHaveBeenCalledWith(user.password, 10);
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: {
-        email: user.email,
-        name: user.name,
-        birthdate: user.birthdate,
-        gender: user.gender,
-        genderInterest: user.genderInterest,
-        searchDistance: user.searchDistance,
-      },
-    })
-  })
-
-  test('ensure return correct user', async () => {
-    //! Arrange
-    //! Act
-    const result = await sut.create(user)
-    //! Assert
-    expect(result).toEqual({
-      id: 'any id',
-      email: 'any email',
-      name: 'any name',
-      birthdate: expect.any(Date),
-      gender: 'any gender',
-      genderInterest: 'any gender interest',
-      description: '',
-      images: [],
-      searchDistance: 100,
-    })
-  })
-
-  test('ensure throw if prisma throws', async () => {
-    //! Arrange
-    prisma.user.create.mockRejectedValueOnce(new Error('any error'))
-    //! Act
-    const promise = sut.create(user)
-    //! Assert
-    await expect(promise).rejects.toThrow(new Error('any error'))
-  })
-})
-
-describe('user-repository-impl.test.ts - getUserById', () => {
-  let prisma: DeepMockProxy<PrismaClient>
-  let user: User
-  let imageRepository: MockProxy<ImageRepository>
-  let sut: UserRepositoryImpl
-
-  beforeEach(() => {
-    user = {
-      id: 'any id',
-      email: 'any email',
-      name: 'any name',
-      birthdate: new Date(),
-      gender: 'male',
-      genderInterest: 'female',
-      description: 'any description',
-      searchDistance: 100,
-      images: [
-        {
-          id: 'profile image id',
-          orderId: 0,
-          userId: 'any id',
-          flag: 'profile',
-          url: 'profile image key signed url',
-        },
-      ],
-    }
-    imageRepository = mock<ImageRepository>()
-    imageRepository.getImageUrlByFileKey.mockImplementation((fileKey) =>
-      Promise.resolve(`${fileKey} signed url`),
-    )
-
-    prisma = mockDeep<PrismaClient>()
-    prisma.user.findUnique.mockResolvedValue(
-      mock<PrismaUser & { images: PrismaImage[]; description: Description }>({
         id: user.id,
         email: user.email,
         name: user.name,
-        birthdate: user.birthdate,
-        gender: user.gender,
-        genderInterest: user.genderInterest,
-        searchDistance: user.searchDistance,
-        description: {
-          content: user.description,
-        },
-        images: [
-          mock<PrismaImage>({
-            id: 'profile image id',
-            userId: user.id,
-            orderId: 0,
-            flag: 'profile',
-            fileKey: 'profile image key',
-          }),
-          mock<PrismaImage>({
-            id: 'id image id',
-            orderId: 0,
-            userId: user.id,
-            flag: 'id',
-            fileKey: 'id image key',
-          }),
-        ],
+        password: hashedPassword,
+        organization: { connect: { id: user.organization.id } },
+        permissions: { create: { manageUsers: user.permissions.manageUsers, id: user.permissions.id } },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: false,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        organization: { id: "org1", name: "Test Org" },
+        permissions: { id: "perm1", manageUsers: true },
       }),
-    )
+    );
+    expect(result.password).toBeUndefined();
+  });
 
-    sut = new UserRepositoryImpl({
-      prisma,
-      imageRepository,
-    })
-  })
-
-  test('ensure return correct user', async () => {
+  test("throws error if user.permissions is null", async () => {
     //! Arrange
-    //! Act
-    const result = await sut.getUserById('any id')
-    //! Assert
-    expect({ ...result, birthdate: result?.birthdate.toJSON() }).toEqual({
+    const hashedPassword = "$2b$10$FKqivT2TYUwXBLiXRXz3Ee19hpYM9zbI.MtpWZHv9yn7DWaAnPmtm";
+    (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+    const createdUser = {
       ...user,
-      birthdate: user.birthdate.toJSON(),
-    })
-  })
+      organization: { id: "org1", name: "Test Org" },
+      permissions: null,
+    } as PrismaUser & { organization: Organization; permissions: null };
+    prisma.user.create.mockResolvedValue(createdUser);
 
-  test('ensure return without images with flag different from profile', async () => {
+    //! Act & Assert
+    await expect(sut.create(user)).rejects.toThrow("User does not have permissions");
+  });
+
+  test("throws error if password is undefined", async () => {
     //! Arrange
-    prisma.user.findUnique.mockResolvedValue(
-      mock<PrismaUser & { images: PrismaImage[]; description: Description }>({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        birthdate: user.birthdate,
-        gender: user.gender,
-        genderInterest: user.genderInterest,
-        searchDistance: user.searchDistance,
-        description: {
-          content: user.description,
-        },
-        images: [
-          mock<PrismaImage>({
-            id: 'profile image id',
-            userId: user.id,
-            flag: 'profile',
-            fileKey: 'profile image key',
-          }),
-          mock<PrismaImage>({
-            id: 'id image id',
-            userId: user.id,
-            flag: 'id',
-            fileKey: 'id image key',
-          }),
-        ],
-      }),
-    )
-    //! Act
-    const result = await sut.getUserById('any id')
-    //! Assert
-    expect(result?.images).toHaveLength(1)
-    expect(result?.images?.[0].flag).toEqual('profile')
-  })
+    user.password = undefined;
 
-  test('ensure return null if user not exists', async () => {
-    //! Arrange
-    prisma.user.findUnique.mockResolvedValue(null)
-    //! Act
-    const result = await sut.getUserById('any id')
-    //! Assert
-    expect(result).toBeNull()
-  })
+    //! Act & Assert
+    await expect(sut.create(user)).rejects.toThrow("Password is required to hash it");
+  });
+});
 
-  test('ensure call prisma with correct params', async () => {
-    //! Arrange
-    //! Act
-    await sut.getUserById('any id')
-    //! Assert
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
-      where: { id: 'any id' },
-      include: { description: true, images: true },
-    })
-  })
-
-  test('ensure call imageRepository with correct params', async () => {
-    //! Arrange
-    //! Act
-    await sut.getUserById('any id')
-    //! Assert
-    expect(imageRepository.getImageUrlByFileKey).toHaveBeenCalledWith(
-      'profile image key',
-    )
-  })
-})
-
-describe('user-repository-impl.test.ts - getUserByEmail', () => {
-  let prisma: DeepMockProxy<PrismaClient>
-  let sut: UserRepositoryImpl
-  let prismaUser: MockProxy<
-    PrismaUser & { images: PrismaImage[]; description: Description }
-  >
+describe("user-repository-impl.test.ts - update", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+  let user: MockProxy<User>;
 
   beforeEach(() => {
-    prismaUser = mock<
-      PrismaUser & { images: PrismaImage[]; description: Description }
-    >({
-      id: 'userId',
-      email: 'any',
-      name: 'any',
-      gender: 'any',
-      genderInterest: 'any',
-      searchDistance: 100,
-      birthdate: new Date('1990-01-01'),
-      description: mock<Description>({ content: 'any description' }),
-      images: [],
-    })
-    prisma = mockDeep<PrismaClient>()
-    prisma.user.findUnique.mockResolvedValue(prismaUser)
-    sut = new UserRepositoryImpl({
-      prisma,
-      imageRepository: mock<ImageRepository>(),
-    })
-  })
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
 
-  test('ensure return null if user not exists', async () => {
+    user = mock<User>({
+      id: "1",
+      email: "test@example.com",
+      name: "Test User",
+      organization: { id: "org1" },
+      permissions: { id: "perm1", manageUsers: true },
+      isArchived: false,
+    });
+  });
+
+  test("updates a user successfully", async () => {
     //! Arrange
-    prisma.user.findUnique.mockResolvedValue(null)
-    //! Act
-    const result = await sut.getUserByEmail('any email')
-    //! Assert
-    expect(result).toBeNull()
-  })
-
-  test('ensure call prisma with correct params', async () => {
-    //! Arrange
-    //! Act
-    await sut.getUserByEmail('any email')
-    //! Assert
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
-      where: { email: 'any email' },
-      include: { description: true, images: true },
-    })
-  })
-
-  test('ensure return correct user', async () => {
-    //! Arrange
-    const user: User = {
-      birthdate: prismaUser.birthdate,
-      description: prismaUser.description.content,
-      email: prismaUser.email,
-      gender: prismaUser.gender,
-      genderInterest: prismaUser.genderInterest,
-      id: prismaUser.id,
-      searchDistance: prismaUser.searchDistance,
-      images: [],
-      name: prismaUser.name,
-    }
-    //! Act
-    const result = await sut.getUserByEmail('any email')
-    //! Assert
-    expect(result).toEqual(user)
-  })
-
-  test('ensure throw if prisma throws', async () => {
-    //! Arrange
-    prisma.user.findUnique.mockRejectedValueOnce(new Error('any error'))
-    //! Act
-    const promise = sut.getUserByEmail('any email')
-    //! Assert
-    await expect(promise).rejects.toThrow(new Error('any error'))
-  })
-})
-
-describe('user-repository-impl.test.ts - update', () => {
-  let prisma: DeepMockProxy<PrismaClient>
-  let sut: UserRepositoryImpl
-  let user: MockProxy<User>
-
-  beforeEach(() => {
-    user = mock<User>({ id: 'any id', description: '' })
-    prisma = mockDeep<PrismaClient>()
-
-    const prismaUser = mock<
-      PrismaUser & { images: PrismaImage[]; description: Description }
-    >({
-      images: [],
-    })
-
-    prisma.user.update.mockResolvedValue(prismaUser)
-
-    sut = new UserRepositoryImpl({
-      prisma,
-      imageRepository: mock<ImageRepository>(),
-    })
-  })
-
-  test('ensure call prisma with correct params', async () => {
-    //! Arrange
-    //! Act
-    await sut.update(user)
-    //! Assert
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: user.id },
-      include: { description: true, images: true },
-      data: {
-        email: user.email,
-        name: user.name,
-        birthdate: user.birthdate,
-        gender: user.gender,
-        genderInterest: user.genderInterest,
-        searchDistance: user.searchDistance,
-        description: {
-          upsert: {
-            create: { content: '' },
-            update: { content: user.description },
-          },
-        },
-      },
-    })
-  })
-
-  test('ensure return correct user', async () => {
-    //! Arrange
+    const organizationId = "org1";
     const updatedUser = {
-      id: 'updated id',
-      email: 'any email',
-      name: 'any name',
-      description: { content: 'any description' },
-      birthdate: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      gender: 'male',
-      genderInterest: 'female',
-      searchDistance: 100,
-      images: [],
-    }
-    prisma.user.update.mockResolvedValue(updatedUser)
+      ...user,
+      organization: { id: "org1", name: "Test Org" },
+      permissions: { id: "perm1", manageUsers: false },
+    } as PrismaUser & { organization: Organization; permissions: Permissions };
+    prisma.user.findUnique.mockResolvedValue(mockDeep<PrismaUser>(user));
+    prisma.user.update.mockResolvedValue(updatedUser);
+
     //! Act
-    const result = await sut.update(user)
+    const result = await sut.update(user, organizationId);
+
     //! Assert
-    expect(result).toEqual({
-      birthdate: expect.any(Date),
-      email: updatedUser.email,
-      gender: updatedUser.gender,
-      genderInterest: updatedUser.genderInterest,
-      id: updatedUser.id,
-      name: updatedUser.name,
-      description: updatedUser.description.content,
-      searchDistance: updatedUser.searchDistance,
-      images: [],
-    } as User)
-  })
-})
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: user.id, organizationId } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      data: {
+        name: user.name,
+        email: user.email,
+        isArchived: user.isArchived,
+        permissions: { update: { manageUsers: user.permissions.manageUsers } },
+      },
+      where: { id: user.id, organizationId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+    expect(result).toEqual(updatedUser);
+  });
+
+  test("throws UserNotFoundError if user does not exist", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    //! Act & Assert
+    await expect(sut.update(user, organizationId)).rejects.toThrow(UserNotFoundError);
+  });
+
+  test("throws error if user.permissions is null", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    const updatedUser = {
+      ...user,
+      organization: { id: "org1", name: "Test Org" },
+      permissions: null,
+    } as PrismaUser & { organization: Organization; permissions: null };
+    prisma.user.findUnique.mockResolvedValue(mockDeep<PrismaUser>(user));
+    prisma.user.update.mockResolvedValue(updatedUser);
+
+    //! Act & Assert
+    await expect(sut.update(user, organizationId)).rejects.toThrow("User does not have permissions");
+  });
+});
+
+describe("user-repository-impl.test.ts - getAllInOrganization", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+  });
+
+  test("returns all users in the organization", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    const users = [
+      {
+        id: "1",
+        email: "user1@example.com",
+        name: "User One",
+        isArchived: false,
+        organization: { id: "org1", name: "Test Org" },
+        permissions: { id: "perm1", manageUsers: true },
+      },
+      {
+        id: "2",
+        email: "user2@example.com",
+        name: "User Two",
+        isArchived: false,
+        organization: { id: "org1", name: "Test Org" },
+        permissions: { id: "perm2", manageUsers: false },
+      },
+    ];
+    prisma.user.findMany.mockResolvedValue(mockDeep<PrismaUser[]>([...users]));
+
+    //! Act
+    const result = await sut.getAllInOrganization(organizationId);
+
+    //! Assert
+    expect(result).toEqual(users);
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { organizationId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+  });
+
+  test("throws error if user.permissions is null", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    const users = [
+      {
+        id: "1",
+        email: "user1@example.com",
+        name: "User One",
+        isArchived: false,
+        organization: { id: "org1", name: "Test Org" },
+        permissions: null,
+      },
+    ];
+    prisma.user.findMany.mockResolvedValue(mockDeep<PrismaUser[]>(users));
+
+    //! Act & Assert
+    await expect(sut.getAllInOrganization(organizationId)).rejects.toThrow("User does not have permissions");
+  });
+
+  test("ensure return empty array if no users found", async () => {
+    //! Arrange
+    const organizationId = "org1";
+    prisma.user.findMany.mockResolvedValue([]);
+
+    //! Act
+    const result = await sut.getAllInOrganization(organizationId);
+
+    //! Assert
+    expect(result).toEqual([]);
+  });
+});

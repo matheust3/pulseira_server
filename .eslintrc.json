@@ -22,6 +22,12 @@
             "ignoreRegExpLiterals": true,
             "ignorePattern": "^import\\s.+\\sfrom\\s.+;$"
           }
+        ],
+        "prettier/prettier": [
+          "error",
+          {
+            "printWidth": 120
+          }
         ]
       }
     }

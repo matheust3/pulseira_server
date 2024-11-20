@@ -1,175 +1,144 @@
-import { PrismaClient } from '@prisma/client'
-import { UserRepository } from '../../core/application/gateways/user-repository'
-import { User } from '../../core/domain/models/user'
-import { Image } from '../../core/domain/models/file/image'
-import { ImageRepository } from '../../core/application/gateways/image-repository'
+import { PrismaClient } from "@prisma/client";
+import { UserRepository } from "../../core/application/repositories/user-repository";
+import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
+import bcrypt from "bcrypt";
+import { User } from "../../core/domain/models/user";
 
 export class UserRepositoryImpl implements UserRepository {
-  private readonly prisma: PrismaClient
-  private readonly imageRepository: ImageRepository
+  private readonly prisma: PrismaClient;
 
-  constructor(args: {
-    prisma: PrismaClient
-    imageRepository: ImageRepository
-  }) {
-    this.prisma = args.prisma
-    this.imageRepository = args.imageRepository
+  constructor(args: { prisma: PrismaClient }) {
+    this.prisma = args.prisma;
+  }
+
+  async getAllInOrganization(organizationId: string): Promise<User[]> {
+    const users = await this.prisma.user.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+    return users.map((user) => {
+      if (user.permissions === null) {
+        throw new Error("User does not have permissions");
+      } else {
+        return { ...user, permissions: user.permissions };
+      }
+    });
+  }
+
+  async update(user: User, organizationId: string): Promise<User> {
+    const exists = await this.prisma.user.findUnique({ where: { id: user.id, organizationId } });
+    if (!exists) {
+      throw new UserNotFoundError();
+    } else {
+      const updatedUser = await this.prisma.user.update({
+        data: {
+          name: user.name,
+          email: user.email,
+          isArchived: user.isArchived,
+          permissions: { update: { manageUsers: user.permissions.manageUsers } },
+        },
+        where: { id: user.id, organizationId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isArchived: true,
+          organization: { select: { id: true, name: true } },
+          permissions: { select: { id: true, manageUsers: true } },
+        },
+      });
+
+      if (updatedUser.permissions === null) {
+        throw new Error("User does not have permissions");
+      } else {
+        return { ...updatedUser, permissions: updatedUser.permissions };
+      }
+    }
+  }
+
+  private async hashPassword(password?: string): Promise<string> {
+    if (!password) {
+      throw new Error("Password is required to hash it");
+    }
+    return bcrypt.hash(password, 10);
   }
 
   async create(user: User): Promise<User> {
-    const newUser = await this.prisma.user.create({
+    const hashedPassword = await this.hashPassword(user.password);
+
+    const createdUser = await this.prisma.user.create({
       data: {
+        id: user.id,
         email: user.email,
         name: user.name,
-        birthdate: user.birthdate,
-        gender: user.gender,
-        genderInterest: user.genderInterest,
-        searchDistance: user.searchDistance,
+        password: hashedPassword,
+        organization: { connect: { id: user.organization.id } },
+        permissions: { create: { manageUsers: user.permissions.manageUsers, id: user.permissions.id } },
       },
-    })
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: false,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
 
-    return {
-      id: newUser.id,
-      email: newUser.email,
-      name: newUser.name,
-      birthdate: newUser.birthdate,
-      gender: newUser.gender,
-      genderInterest: newUser.genderInterest,
-      description: '',
-      searchDistance: newUser.searchDistance,
-      images: [],
-    }
-  }
-
-  async getUserById(id: string): Promise<User | null> {
-    const result = await this.prisma.user.findUnique({
-      where: { id },
-      include: { description: true, images: true },
-    })
-
-    if (result === null) {
-      return null
+    if (createdUser.permissions === null) {
+      throw new Error("User does not have permissions");
     } else {
-      const profileImages = result.images.filter(
-        (image) => image.flag === 'profile',
-      )
-
-      const images = await Promise.all(
-        profileImages.map(async (image) => {
-          return {
-            id: image.id,
-            userId: image.userId,
-            flag: image.flag,
-            orderId: image.orderId,
-            // Get the image url from the imageRepository
-            url: await this.imageRepository.getImageUrlByFileKey(image.fileKey),
-          } as Image
-        }),
-      )
-
-      const user: User = {
-        id: result.id,
-        email: result.email,
-        name: result.name,
-        gender: result.gender,
-        genderInterest: result.genderInterest,
-        description: result.description?.content ?? '',
-        birthdate: result.birthdate,
-        searchDistance: result.searchDistance,
-        images,
-      }
-
-      return user
+      const user: User = { ...createdUser, permissions: createdUser.permissions };
+      delete user.password;
+      return user;
     }
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string, options?: { withPassHash: boolean }): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: { email },
-      include: { description: true, images: true },
-    })
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isArchived: true,
+        password: options?.withPassHash === true || false,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
 
-    if (user === null) {
-      return null
-    }
-
-    const profileImages = user.images.filter(
-      (image) => image.flag === 'profile',
-    )
-
-    const images = await Promise.all(
-      profileImages.map(async (image) => {
-        return {
-          id: image.id,
-          userId: image.userId,
-          flag: image.flag,
-          orderId: image.orderId,
-          // Get the image url from the imageRepository
-          url: await this.imageRepository.getImageUrlByFileKey(image.fileKey),
-        } as Image
-      }),
-    )
-
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      description: user.description?.content ?? '',
-      birthdate: user.birthdate,
-      gender: user.gender,
-      genderInterest: user.genderInterest,
-      searchDistance: user.searchDistance,
-      images,
+    if (!user) {
+      throw new UserNotFoundError();
+    } else {
+      if (user.permissions === null) {
+        throw new Error("User does not have permissions");
+      } else {
+        return { ...user, permissions: user.permissions };
+      }
     }
   }
 
-  async update(user: Partial<User>): Promise<User> {
-    const updatedUser = await this.prisma.user.update({
-      where: { id: user.id },
-      include: { description: true, images: true },
-      data: {
-        email: user.email,
-        name: user.name,
-        birthdate: user.birthdate,
-        gender: user.gender,
-        genderInterest: user.genderInterest,
-        searchDistance: user.searchDistance,
-        description: {
-          upsert: {
-            create: { content: user.description ?? '' },
-            update: { content: user.description },
-          },
-        },
-      },
-    })
-
-    const profileImages = updatedUser.images.filter(
-      (image) => image.flag === 'profile',
-    )
-
-    const images = await Promise.all(
-      profileImages.map(async (image) => {
-        return {
-          id: image.id,
-          userId: image.userId,
-          flag: image.flag,
-          orderId: image.orderId,
-          // Get the image url from the imageRepository
-          url: await this.imageRepository.getImageUrlByFileKey(image.fileKey),
-        } as Image
-      }),
-    )
-
-    return {
-      birthdate: updatedUser.birthdate,
-      description: updatedUser.description?.content ?? '',
-      email: updatedUser.email,
-      gender: updatedUser.gender,
-      genderInterest: updatedUser.genderInterest,
-      id: updatedUser.id,
-      name: updatedUser.name,
-      searchDistance: updatedUser.searchDistance,
-      images,
+  async updatePassword(email: string, password: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new UserNotFoundError();
     }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await this.prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        passwordReset: true,
+      },
+    });
   }
 }

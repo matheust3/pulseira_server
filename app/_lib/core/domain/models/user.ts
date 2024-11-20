@@ -1,13 +1,12 @@
-import { Image } from './file/image'
+import { Organization } from "./organization";
+import { Permissions } from "./permissions";
 
 export interface User {
-  id: string
-  email: string
-  name: string
-  description: string
-  birthdate: Date
-  gender: string
-  genderInterest: string
-  images: Image[]
-  searchDistance: number
+  id: string;
+  email: string;
+  name: string;
+  password?: string;
+  permissions: Permissions;
+  organization: Organization;
+  isArchived: boolean;
 }

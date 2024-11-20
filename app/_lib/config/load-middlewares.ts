@@ -1,27 +1,35 @@
-import { AuthMiddleware, GetEmailTokenRateLimiter } from '@/middlewares'
-import { AuthWithEmailOnly } from '../core/domain/usecases/authentication/auth-with-email-only'
-import { GetTokenPayload } from '../core/domain/usecases/authentication/get-token-payload'
+import { GetEmailTokenRateLimiter } from "@/middlewares";
+import { Guard } from "@/middlewares/guard";
+import { LoginRateLimiter } from "@/middlewares/login-rate-limiter";
+import { RecoverPasswordRateLimiter } from "@/middlewares/recover-password-rate-limiter";
+import { AuthService } from "../core/application/gateways/auth-service";
 
 export class LoadMiddlewares {
-  private readonly _authMiddleware: AuthMiddleware
-  public get authMiddleware(): AuthMiddleware {
-    return this._authMiddleware
-  }
-
-  private readonly _getEmailTokenRateLimiter: GetEmailTokenRateLimiter
+  private readonly _getEmailTokenRateLimiter: GetEmailTokenRateLimiter;
   public get getEmailTokenRateLimiter(): GetEmailTokenRateLimiter {
-    return this._getEmailTokenRateLimiter
+    return this._getEmailTokenRateLimiter;
   }
 
-  constructor(args: {
-    authWithEmailOnly: AuthWithEmailOnly
-    getTokenPayload: GetTokenPayload
-  }) {
-    this._authMiddleware = new AuthMiddleware({
-      authWithEmailOnly: args.authWithEmailOnly,
-      getTokenPayload: args.getTokenPayload,
-    })
+  private readonly _guard: Guard;
+  public get guard(): Guard {
+    return this._guard;
+  }
 
-    this._getEmailTokenRateLimiter = new GetEmailTokenRateLimiter()
+  private readonly _recoverPasswordRateLimiter: RecoverPasswordRateLimiter;
+  public get recoverPasswordRateLimiter(): RecoverPasswordRateLimiter {
+    return this._recoverPasswordRateLimiter;
+  }
+
+  private readonly _loginRateLimiter: LoginRateLimiter;
+  public get loginRateLimiter(): LoginRateLimiter {
+    return this._loginRateLimiter;
+  }
+
+  constructor(args: { authService: AuthService }) {
+    this._getEmailTokenRateLimiter = new GetEmailTokenRateLimiter();
+    this._recoverPasswordRateLimiter = new RecoverPasswordRateLimiter();
+    this._loginRateLimiter = new LoginRateLimiter();
+
+    this._guard = new Guard({ authService: args.authService });
   }
 }

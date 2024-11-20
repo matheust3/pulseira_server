@@ -1,86 +1,84 @@
-import { MockProxy } from 'jest-mock-extended'
-import { User } from '../../core/domain/models/user'
-import { userValidator } from './user-validator'
+import { userValidator } from "./user-validator";
+import { organizationValidator } from "./organization-validator";
+import { userPermissionsValidator } from "./user-permissions-validator";
 
-describe('user-validator.test.ts - validate', () => {
-  let user: MockProxy<User>
+describe("userValidator", () => {
+  it("should validate a valid user", async () => {
+    const validUser = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      email: "test@example.com",
+      password: "password123",
+      name: "John Doe",
+      organization: await organizationValidator.validate({
+        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+        name: "OrgName",
+      }),
+      permissions: await userPermissionsValidator.validate({
+        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+        manageUsers: true,
+      }),
+      isArchived: false,
+    };
 
-  beforeEach(() => {
-    user = {
-      id: 'any id',
-      email: 'email@domain.com',
-      name: 'any name',
-      searchDistance: 100,
-      birthdate: new Date(new Date().getFullYear() - 18 + '-01-01'),
-      gender: 'male',
-      genderInterest: 'female',
-      description: 'any description',
-      images: [],
-    }
-  })
+    await expect(userValidator.validate(validUser)).resolves.toBe(validUser);
+  });
 
-  test('ensure not user is invalide if age is lass than 18', async () => {
-    //! Arrange
-    user.birthdate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 365 * 17)
-    const error = Error(
-      'birthdate must be greater than or equal to 18 years old',
-    )
-    //! Act
-    //! Assert
-    expect(() => userValidator.validateSync(user)).toThrow(error)
-  })
+  it("should invalidate a user with missing required fields", async () => {
+    const invalidUser = {
+      email: "test@example.com",
+      name: "John Doe",
+      organization: await organizationValidator.validate({
+        id: "123e4567-e89b-12d3-a456-426614174001",
+        name: "OrgName",
+      }),
+      permissions: await userPermissionsValidator.validate({
+        id: "123e4567-e89b-12d3-a456-426614174002",
+        manageUsers: true,
+      }),
+    };
 
-  test('ensure not user is invalide if age is lass than 18', async () => {
-    //! Arrange
-    //! Act
-    const res = userValidator.validateSync(user)
-    //! Assert
-    expect(res).toEqual(user)
-  })
+    await expect(userValidator.validate(invalidUser)).rejects.toThrow();
+  });
 
-  test('ensure description can be empty but not null or undefined', async () => {
-    //! Arrange
-    user.description = ''
-    //! Act
-    const res = userValidator.validateSync(user)
-    //! Assert
-    expect(res).toEqual(user)
-  })
+  it("should invalidate a user with invalid email", async () => {
+    const invalidUser = {
+      id: "123e4567-e89b-7d3a-a456-426614174000",
+      email: "invalid-email",
+      password: "password123",
+      name: "John Doe",
+      organization: await organizationValidator.validate({
+        id: "123e4567-e89b-12d3-a456-426614174001",
+        name: "OrgName",
+      }),
+      permissions: await userPermissionsValidator.validate({
+        id: "123e4567-e89b-12d3-a456-426614174002",
+        manageUsers: true,
+      }),
+      isArchived: false,
+    };
 
-  test('ensure not user is invalide is email is invalid', async () => {
-    //! Arrange
-    user.email = 'invalid-email'
-    const error = Error('email must be a valid email')
-    //! Act
-    //! Assert
-    expect(() => userValidator.validateSync(user)).toThrow(error)
-  })
+    await expect(userValidator.validate(invalidUser)).rejects.toThrow();
+  });
 
-  test('ensure throws if description is greater than 500 characters', async () => {
-    //! Arrange
-    user.description = 'a'.repeat(501)
-    const error = Error('description must be at most 500 characters')
-    //! Act
-    //! Assert
-    expect(() => userValidator.validateSync(user)).toThrow(error)
-  })
+  it("should invalidate a user with invalid isArchived value", async () => {
+    const invalidUser = {
+      id: "123e4567-e89b-7d3a-a456-426614174000",
+      email: "test@example.com",
+      password: "password123",
+      name: "John Doe",
+      organization: await organizationValidator.validate({
+        id: "123e4567-e89b-12d3-a456-426614174001",
+        name: "OrgName",
+      }),
+      permissions: await userPermissionsValidator.validate({
+        id: "123e4567-e89b-12d3-a456-426614174002",
+        manageUsers: true,
+      }),
+      isArchived: "not-a-boolean",
+    };
 
-  test('ensure throws if searchDistance is undefined', async () => {
-    //! Arrange
-    const u = { ...user, searchDistance: undefined }
-    delete u.searchDistance
-    const error = Error('searchDistance is a required field')
-    //! Act
-    //! Assert
-    expect(() => userValidator.validateSync(u)).toThrow(error)
-  })
+    await expect(userValidator.validate(invalidUser)).rejects.toThrow();
+  });
 
-  test('ensure throws if searchDistance is greater than 200', async () => {
-    //! Arrange
-    user.searchDistance = 201
-    const error = Error('searchDistance must be less than or equal to 200')
-    //! Act
-    //! Assert
-    expect(() => userValidator.validateSync(user)).toThrow(error)
-  })
-})
+  // Add more tests as needed
+});
