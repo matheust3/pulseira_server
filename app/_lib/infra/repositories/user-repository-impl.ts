@@ -19,6 +19,7 @@ export class UserRepositoryImpl implements UserRepository {
         email: true,
         name: true,
         isArchived: true,
+        phone: true,
         organization: { select: { id: true, name: true } },
         permissions: { select: { id: true, manageUsers: true } },
       },
@@ -41,6 +42,7 @@ export class UserRepositoryImpl implements UserRepository {
         data: {
           name: user.name,
           email: user.email,
+          phone: user.phone,
           isArchived: user.isArchived,
           permissions: { update: { manageUsers: user.permissions.manageUsers } },
         },
@@ -49,6 +51,7 @@ export class UserRepositoryImpl implements UserRepository {
           id: true,
           name: true,
           email: true,
+          phone: true,
           isArchived: true,
           organization: { select: { id: true, name: true } },
           permissions: { select: { id: true, manageUsers: true } },
@@ -77,6 +80,7 @@ export class UserRepositoryImpl implements UserRepository {
       data: {
         id: user.id,
         email: user.email,
+        phone: user.phone,
         name: user.name,
         password: hashedPassword,
         organization: { connect: { id: user.organization.id } },
@@ -85,6 +89,7 @@ export class UserRepositoryImpl implements UserRepository {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         password: false,
         isArchived: true,
@@ -108,6 +113,7 @@ export class UserRepositoryImpl implements UserRepository {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         isArchived: true,
         password: options?.withPassHash === true || false,
