@@ -26,6 +26,7 @@ model User {
   id             String       @id @default(cuid())
   email          String       @unique
   name           String
+  phone          String       @default("")
   password       String
   passwordReset  Boolean      @default(true)
   organization   Organization @relation(fields: [organizationId], references: [id])
