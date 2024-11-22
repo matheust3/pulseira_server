@@ -7,6 +7,7 @@ import { uuidV7 } from "./uuid-v7-validator";
 export const userValidator: ObjectSchema<User> = object({
   id: uuidV7.required(),
   email: string().email().required(),
+  phone: string().nonNullable().default(""),
   password: string().optional(),
   name: string().required(),
   organization: organizationValidator.required(),
