@@ -33,6 +33,7 @@ describe("UserControllerImpl - post", () => {
     user = {
       id: "user-id",
       email: "email@domain.com",
+      phone: "userPhone",
       password: "test-password",
       name: "Test User",
       organization: { id: "org-id", name: "org-name" },
@@ -47,6 +48,7 @@ describe("UserControllerImpl - post", () => {
           email: "master@email.com",
           name: "Master User",
           permissions: { manageUsers: true },
+          phone: user.phone,
           organization: user.organization,
         },
       },
@@ -194,6 +196,7 @@ describe("UserControllerImpl - put", () => {
     user = {
       id: "user-id",
       email: "email@domain.com",
+      phone: "userPhone",
       password: "test-password",
       name: "Test User",
       organization: { id: "org-id", name: "org-name" },
@@ -207,6 +210,7 @@ describe("UserControllerImpl - put", () => {
           id: "master-user-id",
           email: "master@email.com",
           name: "Master User",
+          phone: user.phone,
           permissions: { manageUsers: true },
           organization: user.organization,
         },
@@ -309,6 +313,7 @@ describe("UserControllerImpl - get", () => {
     user = {
       id: "user-id",
       email: "email@domain.com",
+      phone: "userPhone",
       password: "test-password",
       name: "Test User",
       organization: { id: "org-id", name: "org-name" },
@@ -322,6 +327,7 @@ describe("UserControllerImpl - get", () => {
           id: "master-user-id",
           email: "master@email.com",
           name: "Master User",
+          phone: user.phone,
           permissions: { manageUsers: true },
           organization: user.organization,
         },
