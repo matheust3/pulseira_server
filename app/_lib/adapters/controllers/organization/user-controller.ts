@@ -39,30 +39,30 @@ export class UserControllerImpl implements UserController {
       res.status = 401;
       res.body = { message: "Unauthorized" };
     } else {
-      if (req.authorization.user.permissions.manageUsers) {
-        try {
-          const body = (await req.json()) as { user: User };
-          const validUser = await userValidator.validate(body.user);
+      try {
+        const body = (await req.json()) as { user: User };
+        const validUser = await userValidator.validate(body.user);
+        if (req.authorization.user.permissions.manageUsers || req.authorization.user.id === validUser.id) {
           const user = await this.userRepository.update(validUser, req.authorization.user.organization.id);
           res.status = 200;
           res.body = { user };
-        } catch (e) {
-          if (e instanceof InvalidJsonError) {
-            res.status = 400;
-            res.body = { message: "Invalid JSON" };
-          } else if (e instanceof ValidationError) {
-            res.status = 400;
-            res.body = { message: e.errors.join(", ") };
-          } else if (e instanceof UserNotFoundError) {
-            res.status = 400;
-            res.body = { message: "User not found" };
-          } else {
-            throw e;
-          }
+        } else {
+          res.status = 403;
+          res.body = { message: "Forbidden" };
         }
-      } else {
-        res.status = 403;
-        res.body = { message: "Forbidden" };
+      } catch (e) {
+        if (e instanceof InvalidJsonError) {
+          res.status = 400;
+          res.body = { message: "Invalid JSON" };
+        } else if (e instanceof ValidationError) {
+          res.status = 400;
+          res.body = { message: e.errors.join(", ") };
+        } else if (e instanceof UserNotFoundError) {
+          res.status = 400;
+          res.body = { message: "User not found" };
+        } else {
+          throw e;
+        }
       }
     }
   }

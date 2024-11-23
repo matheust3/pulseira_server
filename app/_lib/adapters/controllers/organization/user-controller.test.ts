@@ -232,6 +232,23 @@ describe("UserControllerImpl - put", () => {
     expect(mockUserRepository.update).toHaveBeenCalledWith(user, mockRequest.authorization.user?.organization.id);
   });
 
+  it("should update a user successfully if not authorized to manage user but is updating won profile", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: user.id } },
+    });
+    mockRequest.json.mockResolvedValue({ user });
+
+    userValidator.validate = jest.fn().mockResolvedValue(user);
+    mockUserRepository.update.mockResolvedValue(user);
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(200);
+    expect(mockResponse.body).toEqual({ user });
+    expect(mockUserRepository.update).toHaveBeenCalledWith(user, mockRequest.authorization.user?.organization.id);
+  });
+
   it("should return 401 if user is not authorized", async () => {
     mockRequest.authorization.user = undefined;
 
@@ -246,11 +263,32 @@ describe("UserControllerImpl - put", () => {
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
+    mockRequest.json.mockResolvedValue({ user });
 
     await updateUserController.put(mockRequest, mockResponse);
 
     expect(mockResponse.status).toBe(403);
     expect(mockResponse.body).toEqual({ message: "Forbidden" });
+  });
+
+  it("should return 403 if user does not have manageUsers permission and user is not updating won user", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: {
+        user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: "master-user" },
+      },
+    });
+    user.id = "user-id";
+    mockRequest.json.mockResolvedValue({ user });
+
+    userValidator.validate = jest.fn().mockResolvedValue(user);
+    mockUserRepository.update.mockResolvedValue(user);
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(403);
+    expect(mockResponse.body).toEqual({ message: "Forbidden" });
+    expect(mockUserRepository.update).not.toHaveBeenCalled();
   });
 
   it("should return 400 if JSON is invalid", async () => {
