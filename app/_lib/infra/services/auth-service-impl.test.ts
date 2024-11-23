@@ -77,28 +77,45 @@ describe("auth-service-impl.test.ts - login", () => {
 
 describe("auth-service-impl.test.ts - regenerateToken", () => {
   let sut: AuthServiceImpl;
+  let userRepository: MockProxy<UserRepository>;
   let jwtService: MockProxy<JwtService>;
+  let user: MockProxy<User>;
 
   beforeEach(() => {
+    userRepository = mock<UserRepository>();
     jwtService = mock<JwtService>();
-    sut = new AuthServiceImpl({ userRepository: mock<UserRepository>(), jwtService });
+    sut = new AuthServiceImpl({ userRepository, jwtService });
+
+    user = mock<User>({ id: "user_id", isArchived: false });
   });
 
   test("should return a new token if regeneration is successful", async () => {
     //! Arrange
-    jwtService.generateRefreshToken.mockResolvedValue("new_token");
+    const authToken = mock<AuthToken<User>>({ data: user });
+    jwtService.validateToken.mockResolvedValue(authToken);
+    userRepository.findById.mockResolvedValue(user);
+    jwtService.generateToken.mockResolvedValue("new_token");
     //! Act
     const token = await sut.regenerateToken("old_token");
     //! Assert
     expect(token).toBe("new_token");
-    expect(jwtService.generateRefreshToken).toHaveBeenCalledWith("old_token", "4h");
+    expect(jwtService.generateToken).toHaveBeenCalledWith(user, "4h");
   });
 
-  test("should throw UnauthorizedError if token regeneration fails", async () => {
+  test("should throw UnauthorizedError if token is invalid", async () => {
     //! Arrange
-    jwtService.generateRefreshToken.mockRejectedValue(new Error("Token error"));
+    jwtService.validateToken.mockRejectedValue(new Error("Invalid token"));
     //! Act & Assert
-    await expect(sut.regenerateToken("old_token")).rejects.toThrow(UnauthorizedError);
+    await expect(sut.regenerateToken("invalid_token")).rejects.toThrow(UnauthorizedError);
+  });
+
+  test("should throw ForbiddenError if user is archived", async () => {
+    //! Arrange
+    const authToken = mock<AuthToken<User>>({ data: user });
+    jwtService.validateToken.mockResolvedValue(authToken);
+    userRepository.findById.mockResolvedValue({ ...user, isArchived: true });
+    //! Act & Assert
+    await expect(sut.regenerateToken("old_token")).rejects.toThrow(ForbiddenError);
   });
 });
 

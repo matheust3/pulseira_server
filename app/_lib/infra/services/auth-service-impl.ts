@@ -26,9 +26,20 @@ export class AuthServiceImpl implements AuthService {
 
   async regenerateToken(token: string): Promise<string> {
     try {
-      return await this.jwtService.generateRefreshToken(token, "4h");
+      const userToken = await this.verifyToken(token);
+      // Deve buscar pelo id, porque se o usuário mudar o email, o token não será mais válido
+      const user = await this.userRepository.findById(userToken.data.id);
+      if (user.isArchived) {
+        throw new ForbiddenError();
+      } else {
+        return await this.jwtService.generateToken(user, "4h");
+      }
     } catch (error) {
-      throw new UnauthorizedError();
+      if (error instanceof ForbiddenError) {
+        throw error;
+      } else {
+        throw new UnauthorizedError();
+      }
     }
   }
 
