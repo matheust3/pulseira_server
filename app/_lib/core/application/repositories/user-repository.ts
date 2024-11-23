@@ -29,6 +29,13 @@ export interface UserRepository {
   update(user: User, organizationId: string): Promise<User>;
 
   /**
+   * Change password of a user
+   * @param id The ID of the user
+   * @param password The new password
+   */
+  changePassword(id: string, password: string): Promise<void>;
+
+  /**
    * Get all users in an organization
    * @param organizationId The organization ID of the users
    */

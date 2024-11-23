@@ -484,3 +484,42 @@ describe("user-repository-impl.test.ts - findById", () => {
     await expect(sut.findById(id)).rejects.toThrow("User does not have permissions");
   });
 });
+
+describe("user-repository-impl.test.ts - changePassword", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+  });
+
+  test("changes the password successfully", async () => {
+    //! Arrange
+    const id = "1";
+    const newPassword = "newPassword123";
+    const hashedPassword = "$2b$10$FKqivT2TYUwXBLiXRXz3Ee19hpYM9zbI.MtpWZHv9yn7DWaAnPmtm";
+    (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+    //! Act
+    await sut.changePassword(id, newPassword);
+
+    //! Assert
+    expect(bcrypt.hash).toHaveBeenCalledWith(newPassword, 10);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id },
+      data: { password: hashedPassword },
+    });
+  });
+
+  test("throws error if repository throws", async () => {
+    //! Arrange
+    const id = "1";
+    const newPassword = "newPassword123";
+    const error = new Error("Prisma error");
+    prisma.user.update.mockRejectedValue(error);
+
+    //! Act & Assert
+    await expect(sut.changePassword(id, newPassword)).rejects.toThrow(error);
+  });
+});

@@ -11,6 +11,11 @@ export class UserRepositoryImpl implements UserRepository {
     this.prisma = args.prisma;
   }
 
+  async changePassword(id: string, password: string): Promise<void> {
+    const hashedPassword = await this.hashPassword(password);
+    await this.prisma.user.update({ where: { id }, data: { password: hashedPassword } });
+  }
+
   async findById(id: string): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: { id },
