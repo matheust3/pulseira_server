@@ -10,6 +10,12 @@ export interface UserRepository {
   findByEmail(email: string, options?: { withPassHash: boolean }): Promise<User>;
 
   /**
+   * Find a user by ID
+   * @param id ID of the user to find
+   */
+  findById(id: string): Promise<User>;
+
+  /**
    * Create a new user
    * @param user Returns the user that was created
    */

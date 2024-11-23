@@ -11,6 +11,32 @@ export class UserRepositoryImpl implements UserRepository {
     this.prisma = args.prisma;
   }
 
+  async findById(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        name: true,
+        isArchived: true,
+        password: false,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+
+    if (!user) {
+      throw new UserNotFoundError();
+    } else {
+      if (user.permissions === null) {
+        throw new Error("User does not have permissions");
+      } else {
+        return { ...user, permissions: user.permissions };
+      }
+    }
+  }
+
   async getAllInOrganization(organizationId: string): Promise<User[]> {
     const users = await this.prisma.user.findMany({
       where: { organizationId },
