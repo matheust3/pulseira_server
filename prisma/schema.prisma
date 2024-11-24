@@ -25,10 +25,12 @@ model Organization {
 }
 
 model Permissions {
-  id          String  @id @default(cuid())
-  manageUsers Boolean @default(false)
-  userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id])
+  id                  String  @id @default(cuid())
+  manageUsers         Boolean @default(false)
+  manageOrganization  Boolean @default(false)
+  manageOrganizations Boolean @default(false)
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id])
 }
 
 model User {
