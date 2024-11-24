@@ -1,4 +1,5 @@
-import { clearDb, createUser } from "@/ci/tests/utils/db";
+import { clearDb } from "@/ci/tests/utils/db";
+import { createUser } from "@/ci/tests/utils/user";
 import { PrismaClient } from "@prisma/client";
 
 describe("get.test.ts - post method", () => {
@@ -57,7 +58,9 @@ describe("get.test.ts - post method", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
+    const json = await response.json();
     //! Assert
     expect(response.status).toBe(200);
+    expect(json.token).toBeDefined();
   });
 });

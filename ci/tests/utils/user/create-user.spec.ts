@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import { createUser } from "./create-user";
-import { clearDb } from "./clear-db";
+import { createUser } from "../user/create-user";
+import { clearDb } from "../db";
 
 describe("create-user.ts - create user", () => {
   let db: PrismaClient;
