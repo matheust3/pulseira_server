@@ -6,14 +6,14 @@ import { Request } from "../../core/domain/models/routes/request";
 import { generatePassword } from "../../utils/password-generator";
 import { emailValidator } from "../../utils/validators/email-validator";
 import { InvalidJsonError } from "../../core/domain/errors/invalid-json-error";
-import { ResendEmailProvider } from "../../infra/gateways/resend-email-provider";
 import { UserNotFoundError } from "../../core/domain/errors/user-not-found-error";
+import { EmailProvider } from "../../core/application/gateways/external/email-provider";
 
 export class RecoverPasswordControllerImpl implements RecoverPasswordController {
   private readonly userRepository: UserRepository;
-  private readonly emailProvider: ResendEmailProvider;
+  private readonly emailProvider: EmailProvider;
 
-  constructor(args: { userRepository: UserRepository; emailProvider: ResendEmailProvider }) {
+  constructor(args: { userRepository: UserRepository; emailProvider: EmailProvider }) {
     this.userRepository = args.userRepository;
     this.emailProvider = args.emailProvider;
   }
