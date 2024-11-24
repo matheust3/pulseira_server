@@ -11,3 +11,5 @@ const controller = new OrganizationControllerImpl({
 export const POST = handler(controller.post.bind(controller), dependencyContainer.get<Guard>("Guard"));
 
 export const GET = handler(controller.get.bind(controller), dependencyContainer.get<Guard>("Guard"));
+
+export const PUT = handler(controller.put.bind(controller), dependencyContainer.get<Guard>("Guard"));
