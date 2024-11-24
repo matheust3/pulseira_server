@@ -4,6 +4,74 @@ import { CiAuthToken, createUser, login } from "../../utils/user";
 import { Organization } from "@/app/_lib/core/domain/models/organization";
 import { v7 } from "uuid";
 
+describe("route.spec.ts - get", () => {
+  let db: PrismaClient;
+  let token: CiAuthToken;
+
+  beforeAll(async () => {
+    db = new PrismaClient();
+    await clearDb(db);
+  });
+
+  beforeEach(async () => {
+    await clearDb(db);
+    await createUser(db);
+    token = await login();
+  });
+
+  afterAll(async () => {
+    await clearDb(db);
+  });
+
+  test("ensure return 401 if unauthorized", async () => {
+    //! Arrange
+    const invalidToken = "invalid token";
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${invalidToken}`,
+      },
+    });
+    //! Assert
+    expect(response.status).toBe(401);
+  });
+
+  test("ensure return all organizations", async () => {
+    //! Arrange
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+    });
+    const organizations = await response.json();
+    //! Assert
+    expect(response.status).toBe(200);
+    expect(organizations).toHaveLength(1);
+    expect(organizations[0].cnpj).toBe(token.data.organization.cnpj);
+  });
+
+  test("ensure return 403 if user not permited to manageorganizations", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: { permissions: { update: { manageOrganizations: false } } },
+    });
+    token = await login();
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+    });
+    //! Assert
+    expect(response.status).toBe(403);
+  });
+});
+
 describe("route.spec.ts - post", () => {
   let db: PrismaClient;
   let token: CiAuthToken;
