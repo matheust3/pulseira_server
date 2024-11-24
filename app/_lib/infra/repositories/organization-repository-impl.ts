@@ -30,8 +30,10 @@ export class OrganizationRepositoryImpl implements OrganizationRepository {
     return updatedOrg;
   }
 
-  getAll(): Promise<Organization[]> {
-    throw new Error("Method not implemented.");
+  async getAll(): Promise<Organization[]> {
+    const results = await this.prismaClient.organization.findMany();
+    const organizations = results.map((result) => pick(result, organizationKeys) as Organization);
+    return organizations;
   }
 
   getByCnpj(cnpj: string): Promise<Organization> {

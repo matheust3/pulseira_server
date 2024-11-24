@@ -136,3 +136,61 @@ describe("organization-repository-impl.test.ts - update", () => {
     expect(result).toStrictEqual(updatedOrganization);
   });
 });
+
+describe("organization-repository-impl.test.ts - getAll", () => {
+  let prismaClient: DeepMockProxy<PrismaClient>;
+  let sut: OrganizationRepositoryImpl;
+  let organizations: Organization[];
+
+  beforeEach(() => {
+    prismaClient = mockDeep<PrismaClient>();
+    organizations = [
+      {
+        id: "id1",
+        name: "name1",
+        cnpj: "cnpj1",
+        phone: "phone1",
+        email: "email1",
+        address: "address1",
+        city: "city1",
+        state: "state1",
+        zip: "zip1",
+        country: "country1",
+        isArchived: false,
+      },
+      {
+        id: "id2",
+        name: "name2",
+        cnpj: "cnpj2",
+        phone: "phone2",
+        email: "email2",
+        address: "address2",
+        city: "city2",
+        state: "state2",
+        zip: "zip2",
+        country: "country2",
+        isArchived: false,
+      },
+    ];
+
+    prismaClient.organization.findMany.mockResolvedValue(mock<PrismaOrganization[]>([...organizations]));
+    sut = new OrganizationRepositoryImpl({ prismaClient, uuidService: mock<UuidService>() });
+  });
+
+  test("ensure getAll retrieves all organizations correctly", async () => {
+    //! Act
+    const result = await sut.getAll();
+    //! Assert
+    expect(prismaClient.organization.findMany).toHaveBeenCalledTimes(1);
+    expect(result).toStrictEqual(organizations);
+  });
+
+  test("ensure throw error when prismaClient.organization.findMany throws", async () => {
+    //! Arrange
+    prismaClient.organization.findMany.mockRejectedValue(new Error("findMany error"));
+    //! Act
+    const result = sut.getAll();
+    //! Assert
+    await expect(result).rejects.toThrow("findMany error");
+  });
+});
