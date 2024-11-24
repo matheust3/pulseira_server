@@ -2,9 +2,11 @@ import { userValidator } from "./user-validator";
 import { organizationValidator } from "./organization-validator";
 import { userPermissionsValidator } from "./user-permissions-validator";
 import { Organization } from "../../core/domain/models/organization";
+import { Permissions } from "../../core/domain/models/permissions";
 
 describe("userValidator", () => {
   let validOrganization: Organization;
+  let validUserPermissions: Permissions;
 
   beforeEach(() => {
     validOrganization = {
@@ -20,6 +22,13 @@ describe("userValidator", () => {
       country: "brazil",
       isArchived: false,
     };
+
+    validUserPermissions = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      manageUsers: true,
+      manageOrganization: true,
+      manageOrganizations: true,
+    };
   });
 
   it("should validate a valid user", async () => {
@@ -30,10 +39,7 @@ describe("userValidator", () => {
       password: "password123",
       name: "John Doe",
       organization: await organizationValidator.validate(validOrganization),
-      permissions: await userPermissionsValidator.validate({
-        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-        manageUsers: true,
-      }),
+      permissions: await userPermissionsValidator.validate(validUserPermissions),
       isArchived: false,
     };
 
@@ -48,10 +54,7 @@ describe("userValidator", () => {
       password: "password123",
       name: "John Doe",
       organization: await organizationValidator.validate(validOrganization),
-      permissions: await userPermissionsValidator.validate({
-        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-        manageUsers: true,
-      }),
+      permissions: await userPermissionsValidator.validate(validUserPermissions),
       isArchived: false,
     };
 
@@ -66,10 +69,7 @@ describe("userValidator", () => {
       password: "password123",
       name: "John Doe",
       organization: await organizationValidator.validate(validOrganization),
-      permissions: await userPermissionsValidator.validate({
-        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-        manageUsers: true,
-      }),
+      permissions: await userPermissionsValidator.validate(validUserPermissions),
       isArchived: false,
     };
 
@@ -81,10 +81,7 @@ describe("userValidator", () => {
       email: "test@example.com",
       name: "John Doe",
       organization: await organizationValidator.validate(validOrganization),
-      permissions: await userPermissionsValidator.validate({
-        id: "123e4567-e89b-12d3-a456-426614174002",
-        manageUsers: true,
-      }),
+      permissions: await userPermissionsValidator.validate(validUserPermissions),
     };
 
     await expect(userValidator.validate(invalidUser)).rejects.toThrow();
@@ -97,10 +94,7 @@ describe("userValidator", () => {
       password: "password123",
       name: "John Doe",
       organization: await organizationValidator.validate(validOrganization),
-      permissions: await userPermissionsValidator.validate({
-        id: "123e4567-e89b-12d3-a456-426614174002",
-        manageUsers: true,
-      }),
+      permissions: await userPermissionsValidator.validate(validUserPermissions),
       isArchived: false,
     };
 
@@ -114,10 +108,7 @@ describe("userValidator", () => {
       password: "password123",
       name: "John Doe",
       organization: await organizationValidator.validate(validOrganization),
-      permissions: await userPermissionsValidator.validate({
-        id: "123e4567-e89b-12d3-a456-426614174002",
-        manageUsers: true,
-      }),
+      permissions: await userPermissionsValidator.validate(validUserPermissions),
       isArchived: "not-a-boolean",
     };
 
