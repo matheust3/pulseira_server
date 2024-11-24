@@ -8,11 +8,20 @@ datasource db {
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
+  id         String   @id @default(cuid())
+  name       String
+  cnpj       String   @unique @default("")
+  email      String   @default("")
+  phone      String   @default("")
+  address    String   @default("")
+  city       String   @default("")
+  state      String   @default("")
+  zip        String   @default("")
+  country    String   @default("")
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  users      User[]
 }
 
 model Permissions {
