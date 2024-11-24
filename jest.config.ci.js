@@ -7,6 +7,7 @@ module.exports = {
   watchPathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/.devcontainer/',
+    '<rootDir>/app/',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
