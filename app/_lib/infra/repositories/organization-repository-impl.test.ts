@@ -3,6 +3,7 @@ import { OrganizationRepositoryImpl } from "./organization-repository-impl";
 import { PrismaClient, Organization as PrismaOrganization } from "@prisma/client";
 import { Organization } from "../../core/domain/models/organization";
 import { UuidService } from "../../core/application/gateways/uuid-service";
+import { OrganizationNotFoundError } from "../../core/domain/errors/organization-not-found-error";
 
 describe("organization-repository-impl.test.ts - create", () => {
   let prismaClient: DeepMockProxy<PrismaClient>;
@@ -192,5 +193,58 @@ describe("organization-repository-impl.test.ts - getAll", () => {
     const result = sut.getAll();
     //! Assert
     await expect(result).rejects.toThrow("findMany error");
+  });
+});
+
+describe("organization-repository-impl.test.ts - getByCnpj", () => {
+  let prismaClient: DeepMockProxy<PrismaClient>;
+  let sut: OrganizationRepositoryImpl;
+  let organization: Organization;
+
+  beforeEach(() => {
+    prismaClient = mockDeep<PrismaClient>();
+    organization = {
+      id: "emptId",
+      name: "name",
+      cnpj: "cnpj",
+      phone: "phone",
+      email: "email",
+      address: "address",
+      city: "city",
+      state: "state",
+      zip: "zip",
+      country: "country",
+      isArchived: false,
+    };
+
+    prismaClient.organization.findUnique.mockResolvedValue(mock<PrismaOrganization>({ ...organization }));
+    sut = new OrganizationRepositoryImpl({ prismaClient, uuidService: mock<UuidService>() });
+  });
+
+  test("ensure getByCnpj retrieves organization correctly", async () => {
+    //! Act
+    const result = await sut.getByCnpj(organization.cnpj);
+    //! Assert
+    expect(prismaClient.organization.findUnique).toHaveBeenCalledTimes(1);
+    expect(prismaClient.organization.findUnique).toHaveBeenCalledWith({ where: { cnpj: organization.cnpj } });
+    expect(result).toStrictEqual(organization);
+  });
+
+  test("ensure throw OrganizationNotFoundError when organization with given CNPJ is not found", async () => {
+    //! Arrange
+    prismaClient.organization.findUnique.mockResolvedValue(null);
+    //! Act
+    const result = sut.getByCnpj(organization.cnpj);
+    //! Assert
+    await expect(result).rejects.toThrow(OrganizationNotFoundError);
+  });
+
+  test("ensure throw error when prismaClient.organization.findUnique throws", async () => {
+    //! Arrange
+    prismaClient.organization.findUnique.mockRejectedValue(new Error("findUnique error"));
+    //! Act
+    const result = sut.getByCnpj(organization.cnpj);
+    //! Assert
+    await expect(result).rejects.toThrow("findUnique error");
   });
 });

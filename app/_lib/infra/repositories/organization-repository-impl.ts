@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { OrganizationRepository } from "../../core/application/repositories/organization-repository";
 import { Organization, organizationKeys } from "../../core/domain/models/organization";
 import { UuidService } from "../../core/application/gateways/uuid-service";
+import { OrganizationNotFoundError } from "../../core/domain/errors/organization-not-found-error";
 import { pick } from "lodash";
 
 export class OrganizationRepositoryImpl implements OrganizationRepository {
@@ -36,7 +37,14 @@ export class OrganizationRepositoryImpl implements OrganizationRepository {
     return organizations;
   }
 
-  getByCnpj(cnpj: string): Promise<Organization> {
-    throw new Error("Method not implemented." + cnpj);
+  async getByCnpj(cnpj: string): Promise<Organization> {
+    const result = await this.prismaClient.organization.findUnique({
+      where: { cnpj },
+    });
+    if (!result) {
+      throw new OrganizationNotFoundError();
+    }
+    const organization = pick(result, organizationKeys) as Organization;
+    return organization;
   }
 }
