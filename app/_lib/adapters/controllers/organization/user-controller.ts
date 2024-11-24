@@ -83,7 +83,12 @@ export class UserControllerImpl implements UserController {
             ...body.user,
             id: userId,
             organization: req.authorization.user.organization,
-            permissions: { id: permissionId, manageUsers: false },
+            permissions: {
+              id: permissionId,
+              manageUsers: false,
+              manageOrganizations: false,
+              manageOrganization: false,
+            },
           };
           const validUser = await userValidator.validate(body.user);
           try {

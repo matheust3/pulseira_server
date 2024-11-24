@@ -10,6 +10,7 @@ import { Request } from "../../../core/domain/models/routes/request";
 import { ValidationError } from "yup";
 import { UserNotFoundError } from "../../../core/domain/errors/user-not-found-error";
 import { Organization } from "@/app/_lib/core/domain/models/organization";
+import { Permissions } from "@/app/_lib/core/domain/models/permissions";
 
 describe("UserControllerImpl - post", () => {
   let createUserController: UserControllerImpl;
@@ -19,6 +20,7 @@ describe("UserControllerImpl - post", () => {
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
   let validOrganization: Organization;
+  let validPermissions: Permissions;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -46,6 +48,13 @@ describe("UserControllerImpl - post", () => {
       isArchived: false,
     };
 
+    validPermissions = {
+      id: "123e4567-e89b-12d3-a456-426614174001",
+      manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
@@ -53,7 +62,7 @@ describe("UserControllerImpl - post", () => {
       password: "test-password",
       name: "Test User",
       organization: validOrganization,
-      permissions: { id: "perm-id", manageUsers: false },
+      permissions: validPermissions,
       isArchived: false,
     };
 
@@ -162,7 +171,12 @@ describe("UserControllerImpl - post", () => {
     expect(userValidator.validate).toHaveBeenCalledWith({
       ...user,
       id: "not-valid-user-uuid-v7",
-      permissions: { id: "not-valid-permission-uuid-v7", manageUsers: false },
+      permissions: {
+        id: "not-valid-permission-uuid-v7",
+        manageUsers: false,
+        manageOrganizations: false,
+        manageOrganization: false,
+      },
     });
 
     expect(mockUserRepository.create).toHaveBeenCalledWith(
@@ -200,6 +214,7 @@ describe("UserControllerImpl - put", () => {
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
   let validOrganization: Organization;
+  let validPermissions: Permissions;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -224,6 +239,13 @@ describe("UserControllerImpl - put", () => {
       isArchived: false,
     };
 
+    validPermissions = {
+      id: "123e4567-e89b-12d3-a456-426614174001",
+      manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
@@ -231,7 +253,7 @@ describe("UserControllerImpl - put", () => {
       password: "test-password",
       name: "Test User",
       organization: validOrganization,
-      permissions: { id: "perm-id", manageUsers: false },
+      permissions: validPermissions,
       isArchived: false,
     };
 
@@ -370,6 +392,7 @@ describe("UserControllerImpl - get", () => {
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
   let validOrganization: Organization;
+  let validPermissions: Permissions;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -394,6 +417,13 @@ describe("UserControllerImpl - get", () => {
       isArchived: false,
     };
 
+    validPermissions = {
+      id: "123e4567-e89b-12d3-a456-426614174001",
+      manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
@@ -401,7 +431,7 @@ describe("UserControllerImpl - get", () => {
       password: "test-password",
       name: "Test User",
       organization: validOrganization,
-      permissions: { id: "perm-id", manageUsers: false },
+      permissions: validPermissions,
       isArchived: false,
     };
 
