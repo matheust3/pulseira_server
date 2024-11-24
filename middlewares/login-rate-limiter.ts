@@ -14,7 +14,7 @@ export class LoginRateLimiter implements Middleware {
   }
 
   async handler(request: Request, response: ApiResponse, next: () => void): Promise<void> {
-    if (process.env.NODE_ENV === "test") {
+    if (process.env.NODE_ENV === "development") {
       next();
       return;
     }
