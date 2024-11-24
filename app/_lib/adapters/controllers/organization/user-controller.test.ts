@@ -9,6 +9,7 @@ import { DeepMockProxy, mock, mockDeep, MockProxy } from "jest-mock-extended";
 import { Request } from "../../../core/domain/models/routes/request";
 import { ValidationError } from "yup";
 import { UserNotFoundError } from "../../../core/domain/errors/user-not-found-error";
+import { Organization } from "@/app/_lib/core/domain/models/organization";
 
 describe("UserControllerImpl - post", () => {
   let createUserController: UserControllerImpl;
@@ -17,6 +18,7 @@ describe("UserControllerImpl - post", () => {
   let mockRequest: MockProxy<Request>;
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
+  let validOrganization: Organization;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -30,13 +32,27 @@ describe("UserControllerImpl - post", () => {
       uuidService: mockUuidService,
     });
 
+    validOrganization = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      city: "org city",
+      address: "org address",
+      cnpj: "00000000000111",
+      country: "brazil",
+      email: "email@domain.com",
+      name: "org name",
+      phone: "65999216704",
+      state: "mt",
+      zip: "78455000",
+      isArchived: false,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
       phone: "userPhone",
       password: "test-password",
       name: "Test User",
-      organization: { id: "org-id", name: "org-name" },
+      organization: validOrganization,
       permissions: { id: "perm-id", manageUsers: false },
       isArchived: false,
     };
@@ -183,6 +199,7 @@ describe("UserControllerImpl - put", () => {
   let mockRequest: MockProxy<Request>;
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
+  let validOrganization: Organization;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -193,13 +210,27 @@ describe("UserControllerImpl - put", () => {
       uuidService: mockUuidService,
     });
 
+    validOrganization = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      city: "org city",
+      address: "org address",
+      cnpj: "00000000000111",
+      country: "brazil",
+      email: "email@domain.com",
+      name: "org name",
+      phone: "65999216704",
+      state: "mt",
+      zip: "78455000",
+      isArchived: false,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
       phone: "userPhone",
       password: "test-password",
       name: "Test User",
-      organization: { id: "org-id", name: "org-name" },
+      organization: validOrganization,
       permissions: { id: "perm-id", manageUsers: false },
       isArchived: false,
     };
@@ -338,6 +369,7 @@ describe("UserControllerImpl - get", () => {
   let mockRequest: MockProxy<Request>;
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
+  let validOrganization: Organization;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -348,13 +380,27 @@ describe("UserControllerImpl - get", () => {
       uuidService: mockUuidService,
     });
 
+    validOrganization = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      city: "org city",
+      address: "org address",
+      cnpj: "00000000000111",
+      country: "brazil",
+      email: "email@domain.com",
+      name: "org name",
+      phone: "65999216704",
+      state: "mt",
+      zip: "78455000",
+      isArchived: false,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
       phone: "userPhone",
       password: "test-password",
       name: "Test User",
-      organization: { id: "org-id", name: "org-name" },
+      organization: validOrganization,
       permissions: { id: "perm-id", manageUsers: false },
       isArchived: false,
     };
