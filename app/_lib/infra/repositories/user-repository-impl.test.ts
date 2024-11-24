@@ -508,7 +508,7 @@ describe("user-repository-impl.test.ts - changePassword", () => {
     expect(bcrypt.hash).toHaveBeenCalledWith(newPassword, 10);
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id },
-      data: { password: hashedPassword },
+      data: { password: hashedPassword, passwordReset: false },
     });
   });
 

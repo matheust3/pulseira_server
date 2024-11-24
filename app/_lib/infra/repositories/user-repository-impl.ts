@@ -13,7 +13,7 @@ export class UserRepositoryImpl implements UserRepository {
 
   async changePassword(id: string, password: string): Promise<void> {
     const hashedPassword = await this.hashPassword(password);
-    await this.prisma.user.update({ where: { id }, data: { password: hashedPassword } });
+    await this.prisma.user.update({ where: { id }, data: { password: hashedPassword, passwordReset: false } });
   }
 
   async findById(id: string): Promise<User> {
