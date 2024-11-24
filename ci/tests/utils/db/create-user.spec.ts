@@ -7,6 +7,7 @@ describe("create-user.ts - create user", () => {
 
   beforeAll(async () => {
     db = new PrismaClient();
+    await clearDb(db);
   });
 
   afterAll(async () => {
