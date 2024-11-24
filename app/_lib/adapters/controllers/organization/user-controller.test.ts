@@ -382,6 +382,29 @@ describe("UserControllerImpl - put", () => {
     expect(mockResponse.status).toBe(400);
     expect(mockResponse.body).toEqual({ message: "User not found" });
   });
+
+  it("should not allow a user to alter their own permissions if they do not have manageUsers permission", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: user.id } },
+    });
+    const alteredUser = { ...user, permissions: { manageUsers: true } };
+    mockRequest.json.mockResolvedValue({ user: alteredUser });
+
+    userValidator.validate = jest.fn().mockResolvedValue(alteredUser);
+    mockUserRepository.update.mockResolvedValue(user);
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(200);
+    expect(mockResponse.body).toEqual({ user });
+    expect(mockUserRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissions: mockRequest.authorization.user?.permissions,
+      }),
+      mockRequest.authorization.user?.organization.id,
+    );
+  });
 });
 
 describe("UserControllerImpl - get", () => {

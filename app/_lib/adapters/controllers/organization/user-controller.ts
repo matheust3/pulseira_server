@@ -42,7 +42,13 @@ export class UserControllerImpl implements UserController {
       try {
         const body = (await req.json()) as { user: User };
         const validUser = await userValidator.validate(body.user);
+        // Se pode gerenciar usuários ou é o próprio usuário
         if (req.authorization.user.permissions.manageUsers || req.authorization.user.id === validUser.id) {
+          // Se não pode gerenciar usuários, evita que o usuário altere suas próprias permissões
+          if (!req.authorization.user.permissions.manageUsers) {
+            validUser.permissions = req.authorization.user.permissions;
+          }
+
           const user = await this.userRepository.update(validUser, req.authorization.user.organization.id);
           res.status = 200;
           res.body = { user };
