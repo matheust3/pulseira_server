@@ -1,7 +1,12 @@
 import { User } from "../../domain/models/user";
 
 export interface UserRepository {
-  updatePassword(email: string, password: string): Promise<void>;
+  /**
+   * Update the password of a user
+   * @param id The ID of the user
+   * @param password The new password
+   */
+  updatePassword(id: string, password: string): Promise<void>;
   /**
    * Find a user by email address
    * @param email Email of the user to find
