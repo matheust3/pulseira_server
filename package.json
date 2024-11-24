@@ -9,7 +9,13 @@
     "lint": "next lint",
     "prepare": "husky",
     "test": "jest --passWithNoTests --silent --noStackTrace --runInBand",
-    "test:watch": "npm test -- --watchAll"
+    "test:watch": "npm test -- --watchAll",
+    "docker:ci:up": "docker compose -f ./ci/docker-compose.yml up -d",
+    "docker:ci:down": "docker compose -f ./ci/docker-compose.yml down",
+    "test:ci:up": "DATABASE_URL=$CI_DATABASE_URL && npm run docker:ci:up",
+    "test:ci:run": "jest --config jest.config.ci.js --silent --runInBand",
+    "test:ci": "npm run test:ci:up && npx prisma generate && npx prisma db push && npm run test:ci:run && npm run docker:ci:down",
+    "test:ci:watch": "npm run test:ci:up && npx prisma generate && npx prisma db push && npm run test:ci:run -- --watchAll && npm run docker:ci:down"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.617.0",
