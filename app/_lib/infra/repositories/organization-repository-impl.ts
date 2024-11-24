@@ -1,0 +1,35 @@
+import { PrismaClient } from "@prisma/client";
+import { OrganizationRepository } from "../../core/application/repositories/organization-repository";
+import { Organization, organizationKeys } from "../../core/domain/models/organization";
+import { UuidService } from "../../core/application/gateways/uuid-service";
+import { pick } from "lodash";
+
+export class OrganizationRepositoryImpl implements OrganizationRepository {
+  private readonly prismaClient: PrismaClient;
+  private readonly uuidService: UuidService;
+
+  constructor(args: { prismaClient: PrismaClient; uuidService: UuidService }) {
+    this.prismaClient = args.prismaClient;
+    this.uuidService = args.uuidService;
+  }
+
+  async create(organization: Organization): Promise<Organization> {
+    const orgWithId = { ...organization, id: this.uuidService.generateV7() };
+    const result = await this.prismaClient.organization.create({ data: orgWithId });
+    // Copia os parâmetros de result para um novo objeto com base na interface Organization
+    const org = pick(result, organizationKeys) as Organization;
+    return org;
+  }
+
+  update(organization: Organization): Promise<Organization> {
+    throw new Error("Method not implemented " + organization.address);
+  }
+
+  getAll(): Promise<Organization[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  getByCnpj(cnpj: string): Promise<Organization> {
+    throw new Error("Method not implemented." + cnpj);
+  }
+}

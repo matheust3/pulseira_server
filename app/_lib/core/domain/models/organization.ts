@@ -11,3 +11,17 @@ export interface Organization {
   country: string;
   isArchived: boolean;
 }
+
+export const organizationKeys: (keyof Organization)[] = [
+  "id",
+  "name",
+  "cnpj",
+  "phone",
+  "email",
+  "address",
+  "city",
+  "state",
+  "zip",
+  "country",
+  "isArchived",
+];
