@@ -21,8 +21,13 @@ export class OrganizationRepositoryImpl implements OrganizationRepository {
     return org;
   }
 
-  update(organization: Organization): Promise<Organization> {
-    throw new Error("Method not implemented " + organization.address);
+  async update(organization: Organization): Promise<Organization> {
+    const result = await this.prismaClient.organization.update({
+      where: { id: organization.id },
+      data: organization,
+    });
+    const updatedOrg = pick(result, organizationKeys) as Organization;
+    return updatedOrg;
   }
 
   getAll(): Promise<Organization[]> {
