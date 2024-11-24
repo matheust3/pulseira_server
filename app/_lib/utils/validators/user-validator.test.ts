@@ -1,8 +1,27 @@
 import { userValidator } from "./user-validator";
 import { organizationValidator } from "./organization-validator";
 import { userPermissionsValidator } from "./user-permissions-validator";
+import { Organization } from "../../core/domain/models/organization";
 
 describe("userValidator", () => {
+  let validOrganization: Organization;
+
+  beforeEach(() => {
+    validOrganization = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      name: "OrgName",
+      cnpj: "00000000000111",
+      phone: "65999216704",
+      email: "email@domain.com",
+      address: "org address",
+      city: "org city",
+      state: "mt",
+      zip: "78455000",
+      country: "brazil",
+      isArchived: false,
+    };
+  });
+
   it("should validate a valid user", async () => {
     const validUser = {
       id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
@@ -10,10 +29,7 @@ describe("userValidator", () => {
       phone: "+1234567890",
       password: "password123",
       name: "John Doe",
-      organization: await organizationValidator.validate({
-        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-        name: "OrgName",
-      }),
+      organization: await organizationValidator.validate(validOrganization),
       permissions: await userPermissionsValidator.validate({
         id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
         manageUsers: true,
@@ -31,10 +47,7 @@ describe("userValidator", () => {
       phone: "",
       password: "password123",
       name: "John Doe",
-      organization: await organizationValidator.validate({
-        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-        name: "OrgName",
-      }),
+      organization: await organizationValidator.validate(validOrganization),
       permissions: await userPermissionsValidator.validate({
         id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
         manageUsers: true,
@@ -52,10 +65,7 @@ describe("userValidator", () => {
       phone: null,
       password: "password123",
       name: "John Doe",
-      organization: await organizationValidator.validate({
-        id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
-        name: "OrgName",
-      }),
+      organization: await organizationValidator.validate(validOrganization),
       permissions: await userPermissionsValidator.validate({
         id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
         manageUsers: true,
@@ -70,10 +80,7 @@ describe("userValidator", () => {
     const invalidUser = {
       email: "test@example.com",
       name: "John Doe",
-      organization: await organizationValidator.validate({
-        id: "123e4567-e89b-12d3-a456-426614174001",
-        name: "OrgName",
-      }),
+      organization: await organizationValidator.validate(validOrganization),
       permissions: await userPermissionsValidator.validate({
         id: "123e4567-e89b-12d3-a456-426614174002",
         manageUsers: true,
@@ -89,10 +96,7 @@ describe("userValidator", () => {
       email: "invalid-email",
       password: "password123",
       name: "John Doe",
-      organization: await organizationValidator.validate({
-        id: "123e4567-e89b-12d3-a456-426614174001",
-        name: "OrgName",
-      }),
+      organization: await organizationValidator.validate(validOrganization),
       permissions: await userPermissionsValidator.validate({
         id: "123e4567-e89b-12d3-a456-426614174002",
         manageUsers: true,
@@ -109,10 +113,7 @@ describe("userValidator", () => {
       email: "test@example.com",
       password: "password123",
       name: "John Doe",
-      organization: await organizationValidator.validate({
-        id: "123e4567-e89b-12d3-a456-426614174001",
-        name: "OrgName",
-      }),
+      organization: await organizationValidator.validate(validOrganization),
       permissions: await userPermissionsValidator.validate({
         id: "123e4567-e89b-12d3-a456-426614174002",
         manageUsers: true,
