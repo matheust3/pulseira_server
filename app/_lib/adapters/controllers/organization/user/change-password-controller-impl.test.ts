@@ -2,7 +2,6 @@ import { ChangePasswordControllerImpl } from "./change-password-controller-impl"
 import { AuthService } from "@/app/_lib/core/application/gateways/auth-service";
 import { UserRepository } from "@/app/_lib/core/application/repositories/user-repository";
 import { InvalidJsonError } from "@/app/_lib/core/domain/errors/invalid-json-error";
-import { UserNotFoundError } from "@/app/_lib/core/domain/errors/user-not-found-error";
 import { ApiResponse } from "@/app/_lib/core/domain/models/routes/api-response";
 import { Request } from "@/app/_lib/core/domain/models/routes/request";
 import { passwordValidator } from "@/app/_lib/utils/validators/password-validator";
@@ -48,6 +47,7 @@ describe("ChangePasswordControllerImpl - post", () => {
 
     expect(mockResponse.status).toBe(200);
     expect(mockResponse.body).toEqual({ message: "Password updated successfully" });
+    expect(mockUserRepository.changePassword).toHaveBeenCalledWith("user-id", body.newPassword);
   });
 
   it("should return 401 if user is not authorized", async () => {
@@ -93,25 +93,12 @@ describe("ChangePasswordControllerImpl - post", () => {
     expect(mockResponse.body).toEqual({ message: "Validation error" });
   });
 
-  it("should return 400 if user is not found", async () => {
-    const body = { oldPassword: "old-pass", newPassword: "new-pass" };
-    mockRequest.json.mockResolvedValue(body);
-    passwordValidator.validate = jest.fn().mockResolvedValue(body.newPassword);
-    mockAuthService.login.mockResolvedValue("token");
-    mockUserRepository.updatePassword.mockRejectedValue(new UserNotFoundError());
-
-    await changePasswordController.post(mockRequest, mockResponse);
-
-    expect(mockResponse.status).toBe(400);
-    expect(mockResponse.body).toEqual({ message: "User not found" });
-  });
-
   it("should return 500 for other errors", async () => {
     const body = { oldPassword: "old-pass", newPassword: "new-pass" };
     mockRequest.json.mockResolvedValue(body);
     passwordValidator.validate = jest.fn().mockResolvedValue(body.newPassword);
     mockAuthService.login.mockResolvedValue("token");
-    mockUserRepository.updatePassword.mockRejectedValue(new Error("Unknown error"));
+    mockUserRepository.changePassword.mockRejectedValue(new Error("Unknown error"));
 
     await changePasswordController.post(mockRequest, mockResponse);
 

@@ -2,7 +2,6 @@ import { ChangePasswordController } from "@/app/_lib/core/application/controller
 import { AuthService } from "@/app/_lib/core/application/gateways/auth-service";
 import { UserRepository } from "@/app/_lib/core/application/repositories/user-repository";
 import { InvalidJsonError } from "@/app/_lib/core/domain/errors/invalid-json-error";
-import { UserNotFoundError } from "@/app/_lib/core/domain/errors/user-not-found-error";
 import { ApiResponse } from "@/app/_lib/core/domain/models/routes/api-response";
 import { Request } from "@/app/_lib/core/domain/models/routes/request";
 import { passwordValidator } from "@/app/_lib/utils/validators/password-validator";
@@ -36,16 +35,13 @@ export class ChangePasswordControllerImpl implements ChangePasswordController {
           return;
         }
         // Atualizar a senha
-        await this.userRepository.updatePassword(req.authorization.user.id, validatedPass);
+        await this.userRepository.changePassword(req.authorization.user.id, validatedPass);
         res.status = 200;
         res.body = { message: "Password updated successfully" };
       } catch (e) {
         if (e instanceof InvalidJsonError) {
           res.status = 400;
           res.body = { message: "Invalid JSON" };
-        } else if (e instanceof UserNotFoundError) {
-          res.status = 400;
-          res.body = { message: "User not found" };
         } else if (e instanceof ValidationError) {
           res.status = 400;
           res.body = { message: e.message };
