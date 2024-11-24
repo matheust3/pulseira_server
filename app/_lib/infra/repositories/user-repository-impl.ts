@@ -11,6 +11,37 @@ export class UserRepositoryImpl implements UserRepository {
     this.prisma = args.prisma;
   }
 
+  async changePassword(id: string, password: string): Promise<void> {
+    const hashedPassword = await this.hashPassword(password);
+    await this.prisma.user.update({ where: { id }, data: { password: hashedPassword, passwordReset: false } });
+  }
+
+  async findById(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        name: true,
+        isArchived: true,
+        password: false,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+
+    if (!user) {
+      throw new UserNotFoundError();
+    } else {
+      if (user.permissions === null) {
+        throw new Error("User does not have permissions");
+      } else {
+        return { ...user, permissions: user.permissions };
+      }
+    }
+  }
+
   async getAllInOrganization(organizationId: string): Promise<User[]> {
     const users = await this.prisma.user.findMany({
       where: { organizationId },
@@ -19,6 +50,7 @@ export class UserRepositoryImpl implements UserRepository {
         email: true,
         name: true,
         isArchived: true,
+        phone: true,
         organization: { select: { id: true, name: true } },
         permissions: { select: { id: true, manageUsers: true } },
       },
@@ -41,6 +73,7 @@ export class UserRepositoryImpl implements UserRepository {
         data: {
           name: user.name,
           email: user.email,
+          phone: user.phone,
           isArchived: user.isArchived,
           permissions: { update: { manageUsers: user.permissions.manageUsers } },
         },
@@ -49,6 +82,7 @@ export class UserRepositoryImpl implements UserRepository {
           id: true,
           name: true,
           email: true,
+          phone: true,
           isArchived: true,
           organization: { select: { id: true, name: true } },
           permissions: { select: { id: true, manageUsers: true } },
@@ -77,6 +111,7 @@ export class UserRepositoryImpl implements UserRepository {
       data: {
         id: user.id,
         email: user.email,
+        phone: user.phone,
         name: user.name,
         password: hashedPassword,
         organization: { connect: { id: user.organization.id } },
@@ -85,6 +120,7 @@ export class UserRepositoryImpl implements UserRepository {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         password: false,
         isArchived: true,
@@ -108,6 +144,7 @@ export class UserRepositoryImpl implements UserRepository {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         isArchived: true,
         password: options?.withPassHash === true || false,

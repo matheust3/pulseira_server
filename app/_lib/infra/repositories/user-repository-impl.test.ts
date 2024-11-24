@@ -23,6 +23,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
     const user = {
       id: "1",
       email,
+      phone: "1234567890",
       name: "Test User",
       organization: { id: "org1", name: "Test Org" },
       permissions: { id: "perm1", manageUsers: true },
@@ -39,6 +40,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         password: false,
         isArchived: true,
@@ -54,6 +56,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
     const user = {
       id: "1",
       email,
+      phone: "1234567890",
       name: "Test User",
       password: "hashedPassword",
       organization: { id: "org1", name: "Test Org" },
@@ -70,6 +73,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         password: true,
         isArchived: true,
@@ -94,6 +98,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
     const user = {
       id: "1",
       email,
+      phone: "1234567890",
       name: "Test User",
       organization: { id: "org1", name: "Test Org" },
       permissions: null,
@@ -160,6 +165,7 @@ describe("user-repository-impl.test.ts - create", () => {
     user = mock<User>({
       id: "1",
       email: "test@example.com",
+      phone: "1234567890",
       name: "Test User",
       password: "plainPassword",
       organization: { id: "org1" },
@@ -187,6 +193,7 @@ describe("user-repository-impl.test.ts - create", () => {
       data: {
         id: user.id,
         email: user.email,
+        phone: user.phone,
         name: user.name,
         password: hashedPassword,
         organization: { connect: { id: user.organization.id } },
@@ -195,6 +202,7 @@ describe("user-repository-impl.test.ts - create", () => {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         password: false,
         isArchived: true,
@@ -206,6 +214,7 @@ describe("user-repository-impl.test.ts - create", () => {
       expect.objectContaining({
         id: user.id,
         email: user.email,
+        phone: user.phone,
         name: user.name,
         organization: { id: "org1", name: "Test Org" },
         permissions: { id: "perm1", manageUsers: true },
@@ -250,6 +259,7 @@ describe("user-repository-impl.test.ts - update", () => {
     user = mock<User>({
       id: "1",
       email: "test@example.com",
+      phone: "1234567890",
       name: "Test User",
       organization: { id: "org1" },
       permissions: { id: "perm1", manageUsers: true },
@@ -277,6 +287,7 @@ describe("user-repository-impl.test.ts - update", () => {
       data: {
         name: user.name,
         email: user.email,
+        phone: user.phone,
         isArchived: user.isArchived,
         permissions: { update: { manageUsers: user.permissions.manageUsers } },
       },
@@ -285,6 +296,7 @@ describe("user-repository-impl.test.ts - update", () => {
         id: true,
         name: true,
         email: true,
+        phone: true,
         isArchived: true,
         organization: { select: { id: true, name: true } },
         permissions: { select: { id: true, manageUsers: true } },
@@ -334,6 +346,7 @@ describe("user-repository-impl.test.ts - getAllInOrganization", () => {
       {
         id: "1",
         email: "user1@example.com",
+        phone: "1234567890",
         name: "User One",
         isArchived: false,
         organization: { id: "org1", name: "Test Org" },
@@ -342,6 +355,7 @@ describe("user-repository-impl.test.ts - getAllInOrganization", () => {
       {
         id: "2",
         email: "user2@example.com",
+        phone: "1234567890",
         name: "User Two",
         isArchived: false,
         organization: { id: "org1", name: "Test Org" },
@@ -360,6 +374,7 @@ describe("user-repository-impl.test.ts - getAllInOrganization", () => {
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         isArchived: true,
         organization: { select: { id: true, name: true } },
@@ -375,6 +390,7 @@ describe("user-repository-impl.test.ts - getAllInOrganization", () => {
       {
         id: "1",
         email: "user1@example.com",
+        phone: "1234567890",
         name: "User One",
         isArchived: false,
         organization: { id: "org1", name: "Test Org" },
@@ -397,5 +413,113 @@ describe("user-repository-impl.test.ts - getAllInOrganization", () => {
 
     //! Assert
     expect(result).toEqual([]);
+  });
+});
+
+describe("user-repository-impl.test.ts - findById", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+  });
+
+  test("returns user by ID", async () => {
+    //! Arrange
+    const id = "1";
+    const user = {
+      id,
+      email: "test@example.com",
+      phone: "1234567890",
+      name: "Test User",
+      organization: { id: "org1", name: "Test Org" },
+      permissions: { id: "perm1", manageUsers: true },
+    };
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>(user));
+
+    //! Act
+    const result = await sut.findById(id);
+
+    //! Assert
+    expect(result).toEqual(user);
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        name: true,
+        password: false,
+        isArchived: true,
+        organization: { select: { id: true, name: true } },
+        permissions: { select: { id: true, manageUsers: true } },
+      },
+    });
+  });
+
+  test("throws UserNotFoundError if user does not exist", async () => {
+    //! Arrange
+    const id = "nonexistent";
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    //! Act & Assert
+    await expect(sut.findById(id)).rejects.toThrow(UserNotFoundError);
+  });
+
+  test("throws error if user.permissions is null", async () => {
+    //! Arrange
+    const id = "1";
+    const user = {
+      id,
+      email: "test@example.com",
+      phone: "1234567890",
+      name: "Test User",
+      organization: { id: "org1", name: "Test Org" },
+      permissions: null,
+    };
+    prisma.user.findUnique.mockResolvedValue(mock<PrismaUser>(user));
+
+    //! Act & Assert
+    await expect(sut.findById(id)).rejects.toThrow("User does not have permissions");
+  });
+});
+
+describe("user-repository-impl.test.ts - changePassword", () => {
+  let sut: UserRepository;
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = mockDeep<PrismaClient>();
+    sut = new UserRepositoryImpl({ prisma });
+  });
+
+  test("changes the password successfully", async () => {
+    //! Arrange
+    const id = "1";
+    const newPassword = "newPassword123";
+    const hashedPassword = "$2b$10$FKqivT2TYUwXBLiXRXz3Ee19hpYM9zbI.MtpWZHv9yn7DWaAnPmtm";
+    (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+
+    //! Act
+    await sut.changePassword(id, newPassword);
+
+    //! Assert
+    expect(bcrypt.hash).toHaveBeenCalledWith(newPassword, 10);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id },
+      data: { password: hashedPassword, passwordReset: false },
+    });
+  });
+
+  test("throws error if repository throws", async () => {
+    //! Arrange
+    const id = "1";
+    const newPassword = "newPassword123";
+    const error = new Error("Prisma error");
+    prisma.user.update.mockRejectedValue(error);
+
+    //! Act & Assert
+    await expect(sut.changePassword(id, newPassword)).rejects.toThrow(error);
   });
 });

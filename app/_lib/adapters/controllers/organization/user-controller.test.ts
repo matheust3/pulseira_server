@@ -33,6 +33,7 @@ describe("UserControllerImpl - post", () => {
     user = {
       id: "user-id",
       email: "email@domain.com",
+      phone: "userPhone",
       password: "test-password",
       name: "Test User",
       organization: { id: "org-id", name: "org-name" },
@@ -47,6 +48,7 @@ describe("UserControllerImpl - post", () => {
           email: "master@email.com",
           name: "Master User",
           permissions: { manageUsers: true },
+          phone: user.phone,
           organization: user.organization,
         },
       },
@@ -194,6 +196,7 @@ describe("UserControllerImpl - put", () => {
     user = {
       id: "user-id",
       email: "email@domain.com",
+      phone: "userPhone",
       password: "test-password",
       name: "Test User",
       organization: { id: "org-id", name: "org-name" },
@@ -207,6 +210,7 @@ describe("UserControllerImpl - put", () => {
           id: "master-user-id",
           email: "master@email.com",
           name: "Master User",
+          phone: user.phone,
           permissions: { manageUsers: true },
           organization: user.organization,
         },
@@ -218,6 +222,23 @@ describe("UserControllerImpl - put", () => {
 
   it("should update a user successfully", async () => {
     mockRequest.json.mockResolvedValue({ user });
+    userValidator.validate = jest.fn().mockResolvedValue(user);
+    mockUserRepository.update.mockResolvedValue(user);
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(200);
+    expect(mockResponse.body).toEqual({ user });
+    expect(mockUserRepository.update).toHaveBeenCalledWith(user, mockRequest.authorization.user?.organization.id);
+  });
+
+  it("should update a user successfully if not authorized to manage user but is updating won profile", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: user.id } },
+    });
+    mockRequest.json.mockResolvedValue({ user });
+
     userValidator.validate = jest.fn().mockResolvedValue(user);
     mockUserRepository.update.mockResolvedValue(user);
 
@@ -242,11 +263,32 @@ describe("UserControllerImpl - put", () => {
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
+    mockRequest.json.mockResolvedValue({ user });
 
     await updateUserController.put(mockRequest, mockResponse);
 
     expect(mockResponse.status).toBe(403);
     expect(mockResponse.body).toEqual({ message: "Forbidden" });
+  });
+
+  it("should return 403 if user does not have manageUsers permission and user is not updating won user", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: {
+        user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: "master-user" },
+      },
+    });
+    user.id = "user-id";
+    mockRequest.json.mockResolvedValue({ user });
+
+    userValidator.validate = jest.fn().mockResolvedValue(user);
+    mockUserRepository.update.mockResolvedValue(user);
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(403);
+    expect(mockResponse.body).toEqual({ message: "Forbidden" });
+    expect(mockUserRepository.update).not.toHaveBeenCalled();
   });
 
   it("should return 400 if JSON is invalid", async () => {
@@ -309,6 +351,7 @@ describe("UserControllerImpl - get", () => {
     user = {
       id: "user-id",
       email: "email@domain.com",
+      phone: "userPhone",
       password: "test-password",
       name: "Test User",
       organization: { id: "org-id", name: "org-name" },
@@ -322,6 +365,7 @@ describe("UserControllerImpl - get", () => {
           id: "master-user-id",
           email: "master@email.com",
           name: "Master User",
+          phone: user.phone,
           permissions: { manageUsers: true },
           organization: user.organization,
         },
