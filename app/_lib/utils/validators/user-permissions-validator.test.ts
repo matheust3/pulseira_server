@@ -5,6 +5,8 @@ describe("userPermissionsValidator", () => {
     const validPermissions = {
       id: "123e4567-e89b-12d3-a456-426614174001", // Example UUID v7
       manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
     };
 
     await expect(userPermissionsValidator.validate(validPermissions)).resolves.toBe(validPermissions);
@@ -13,6 +15,8 @@ describe("userPermissionsValidator", () => {
   it("should fail validation for missing id", async () => {
     const invalidPermissions = {
       manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
     };
 
     await expect(userPermissionsValidator.validate(invalidPermissions)).rejects.toThrow();
@@ -22,6 +26,8 @@ describe("userPermissionsValidator", () => {
     const invalidPermissions = {
       id: "invalid-uuid",
       manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
     };
 
     await expect(userPermissionsValidator.validate(invalidPermissions)).rejects.toThrow();
@@ -30,6 +36,8 @@ describe("userPermissionsValidator", () => {
   it("should fail validation for missing manageUsers", async () => {
     const invalidPermissions = {
       id: "018e4567-e89b-12d3-a456-426614174000", // Example UUID v7
+      manageOrganizations: true,
+      manageOrganization: true,
     };
 
     await expect(userPermissionsValidator.validate(invalidPermissions)).rejects.toThrow();
@@ -39,6 +47,8 @@ describe("userPermissionsValidator", () => {
     const invalidPermissions = {
       id: "018e4567-e89b-12d3-a456-426614174000", // Example UUID v7
       manageUsers: "yes",
+      manageOrganizations: true,
+      manageOrganization: true,
     };
 
     await expect(userPermissionsValidator.validate(invalidPermissions)).rejects.toThrow();
