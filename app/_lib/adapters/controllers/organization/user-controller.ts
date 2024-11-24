@@ -48,6 +48,14 @@ export class UserControllerImpl implements UserController {
           if (!req.authorization.user.permissions.manageUsers) {
             validUser.permissions = req.authorization.user.permissions;
           }
+          // Se o usuário não tem permissão para gerenciar organizações, evita que ele de essa permissão a outro usuário
+          if (!req.authorization.user.permissions.manageOrganizations && validUser.permissions.manageOrganizations) {
+            // Verifica se realmente o usuário que será atualiza já tem essa permissão
+            const userToUpdate = await this.userRepository.findById(validUser.id);
+            if (!userToUpdate.permissions.manageOrganizations) {
+              validUser.permissions.manageOrganizations = false;
+            }
+          }
 
           const user = await this.userRepository.update(validUser, req.authorization.user.organization.id);
           res.status = 200;

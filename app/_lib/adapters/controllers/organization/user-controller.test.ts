@@ -405,6 +405,37 @@ describe("UserControllerImpl - put", () => {
       mockRequest.authorization.user?.organization.id,
     );
   });
+
+  it("should not allow a user without manageOrganizations permission to grant this permission to another user", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: {
+        user: { ...mockRequest.authorization.user, permissions: { manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    const alteredUser = { ...user, permissions: { manageOrganizations: true } };
+    mockRequest.json.mockResolvedValue({ user: alteredUser });
+
+    userValidator.validate = jest.fn().mockResolvedValue(alteredUser);
+    mockUserRepository.findById.mockResolvedValue({
+      ...user,
+      permissions: { ...user.permissions, manageOrganizations: false },
+    });
+    mockUserRepository.update.mockResolvedValue(user);
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(200);
+    expect(mockResponse.body).toEqual({ user });
+    expect(mockUserRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissions: expect.objectContaining({
+          manageOrganizations: false,
+        }),
+      }),
+      mockRequest.authorization.user?.organization.id,
+    );
+  });
 });
 
 describe("UserControllerImpl - get", () => {
