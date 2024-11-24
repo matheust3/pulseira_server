@@ -41,7 +41,7 @@ export class UserRepositoryImpl implements UserRepository {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
 
@@ -80,7 +80,7 @@ export class UserRepositoryImpl implements UserRepository {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
     return users.map((user) => {
@@ -127,7 +127,7 @@ export class UserRepositoryImpl implements UserRepository {
               isArchived: true,
             },
           },
-          permissions: { select: { id: true, manageUsers: true } },
+          permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
         },
       });
 
@@ -181,7 +181,7 @@ export class UserRepositoryImpl implements UserRepository {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
 
@@ -219,7 +219,7 @@ export class UserRepositoryImpl implements UserRepository {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
 

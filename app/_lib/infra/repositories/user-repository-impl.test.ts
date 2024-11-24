@@ -59,7 +59,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
   });
@@ -106,7 +106,7 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
   });
@@ -249,7 +249,7 @@ describe("user-repository-impl.test.ts - create", () => {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
     expect(result).toEqual(
@@ -355,7 +355,7 @@ describe("user-repository-impl.test.ts - update", () => {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
     expect(result).toEqual(updatedUser);
@@ -448,7 +448,7 @@ describe("user-repository-impl.test.ts - getAllInOrganization", () => {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
   });
@@ -537,7 +537,7 @@ describe("user-repository-impl.test.ts - findById", () => {
             isArchived: true,
           },
         },
-        permissions: { select: { id: true, manageUsers: true } },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
   });
