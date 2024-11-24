@@ -15,7 +15,8 @@
         "dbaeumer.vscode-eslint",
         "prisma.prisma",
         "bradlc.vscode-tailwindcss",
-        "postman.postman-for-vscode"
+        "postman.postman-for-vscode",
+        "github.vscode-github-actions"
       ],
       "settings": {
         "[typescript]": {
