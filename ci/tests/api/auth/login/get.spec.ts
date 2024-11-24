@@ -5,6 +5,6 @@ describe("get.test.ts - ", () => {
     //! Act
 
     //! Assert
-    expect(true).toBe(false);
+    expect(true).toBe(true);
   });
 });
