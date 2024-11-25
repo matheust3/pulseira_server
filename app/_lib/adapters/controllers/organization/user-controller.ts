@@ -96,27 +96,39 @@ export class UserControllerImpl implements UserController {
           body.user = {
             ...body.user,
             id: userId,
-            organization: req.authorization.user.organization,
             permissions: {
+              ...body.user.permissions,
               id: permissionId,
-              manageUsers: false,
-              manageOrganizations: false,
-              manageOrganization: false,
+              manageOrganizations: req.authorization.user.permissions.manageOrganizations
+                ? body.user.permissions.manageOrganizations
+                : false,
+              manageOrganization: req.authorization.user.permissions.manageOrganization
+                ? body.user.permissions.manageOrganization
+                : false,
             },
           };
           const validUser = await userValidator.validate(body.user);
-          try {
-            await this.userRepository.findByEmail(validUser.email);
-            res.status = 400;
-            res.body = { message: "User already exists" };
-          } catch (e) {
-            if (!(e instanceof UserNotFoundError)) {
-              throw e;
-            } else {
-              validUser.password = userPassword;
-              const user = await this.userRepository.create(validUser);
-              res.status = 201;
-              res.body = { user };
+          //  Se não tem permissão para gerenciar organizações, não pode criar usuários em outras organizações
+          if (
+            !req.authorization.user.permissions.manageOrganizations &&
+            validUser.organization.id !== req.authorization.user.organization.id
+          ) {
+            res.status = 403;
+            res.body = { message: "Forbidden" };
+          } else {
+            try {
+              await this.userRepository.findByEmail(validUser.email);
+              res.status = 400;
+              res.body = { message: "User already exists" };
+            } catch (e) {
+              if (!(e instanceof UserNotFoundError)) {
+                throw e;
+              } else {
+                validUser.password = userPassword;
+                const user = await this.userRepository.create(validUser);
+                res.status = 201;
+                res.body = { user };
+              }
             }
           }
         } catch (e) {

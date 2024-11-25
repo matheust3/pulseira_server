@@ -142,12 +142,13 @@ describe("UserControllerImpl - post", () => {
   });
 
   it("should assign user details correctly", async () => {
-    mockRequest.json.mockResolvedValue(user);
+    //! Arrange
+    mockRequest.json.mockResolvedValue({ user });
     userValidator.validate = jest.fn().mockResolvedValue(user);
     mockUserRepository.create.mockResolvedValue(user);
-
+    //! Act
     await createUserController.post(mockRequest, mockResponse);
-
+    //! Assert
     expect(mockResponse.status).toBe(201);
     expect(mockResponse.body).toEqual({ user });
   });
@@ -173,9 +174,9 @@ describe("UserControllerImpl - post", () => {
       id: "not-valid-user-uuid-v7",
       permissions: {
         id: "not-valid-permission-uuid-v7",
-        manageUsers: false,
-        manageOrganizations: false,
-        manageOrganization: false,
+        manageUsers: true,
+        manageOrganizations: true,
+        manageOrganization: true,
       },
     });
 
