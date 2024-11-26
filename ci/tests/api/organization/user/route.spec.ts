@@ -251,6 +251,160 @@ describe("route.spec.ts - put", () => {
     expect(response.status).toBe(200);
   });
 
+  test("ensure return 403 if user try update user of another organization and do not have permission that", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: true, manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    token = await login();
+    // Cria o usuario de outra organização
+    const anotherUser = await db.user.create({
+      data: {
+        ...validUser,
+        password: "password1F",
+        organization: {
+          create: {
+            id: v7(),
+            name: "Another Organization",
+            cnpj: "60143175000180",
+            city: "City",
+            state: "ST",
+            country: "BR",
+            address: "Address",
+            email: "email@domain.com",
+            zip: "12345678",
+            phone: "123456789",
+            isArchived: false,
+          },
+        },
+        permissions: { create: { ...validUser.permissions, manageOrganizations: false } },
+      },
+      include: { permissions: true, organization: true },
+    });
+
+    //! Act
+    const response = await fetch(
+      `http://localhost:3000/api/organization/user?organizationId=${anotherUser.organization.id}`,
+      {
+        method: "PUT",
+
+        headers: {
+          Authorization: `Bearer ${token.ci.token}`,
+        },
+        body: JSON.stringify({ user: anotherUser }),
+      },
+    );
+    const json = await response.json();
+    //! Assert
+    expect(json).toEqual({ message: "Forbidden" });
+    expect(response.status).toBe(403);
+  });
+
+  test("ensure update user of another organization if have authorization for that and passa organizationId as param", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: true, manageUsers: true } },
+      },
+    });
+    token = await login();
+    // Cria o usuario de outra organização
+    const anotherUser = await db.user.create({
+      data: {
+        ...validUser,
+        password: "password1F",
+        organization: {
+          create: {
+            id: v7(),
+            name: "Another Organization",
+            cnpj: "60143175000180",
+            city: "City",
+            state: "ST",
+            country: "BR",
+            address: "Address",
+            email: "email@domain.com",
+            zip: "12345678",
+            phone: "123456789",
+            isArchived: false,
+          },
+        },
+        permissions: { create: { ...validUser.permissions, manageOrganizations: false } },
+      },
+      include: { permissions: true, organization: true },
+    });
+
+    //! Act
+    const response = await fetch(
+      `http://localhost:3000/api/organization/user?organizationId=${anotherUser.organization.id}`,
+      {
+        method: "PUT",
+
+        headers: {
+          Authorization: `Bearer ${token.ci.token}`,
+        },
+        body: JSON.stringify({ user: anotherUser }),
+      },
+    );
+    const json = await response.json();
+    //! Assert
+    expect(json.user).not.toBeUndefined();
+    expect(response.status).toBe(200);
+  });
+
+  test("ensure return 404 if user try update user of another organization without organizationId", async () => {
+    // Isso acontece porque o usuário não existe na organização do usuário autenticado
+    // sem passa o organizationId, o sistema não consegue saber se o usuário existe ou não
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: true, manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    token = await login();
+    // Cria o usuario de outra organização
+    const anotherUser = await db.user.create({
+      data: {
+        ...validUser,
+        password: "password1F",
+        organization: {
+          create: {
+            id: v7(),
+            name: "Another Organization",
+            cnpj: "60143175000180",
+            city: "City",
+            state: "ST",
+            country: "BR",
+            address: "Address",
+            email: "email@domain.com",
+            zip: "12345678",
+            phone: "123456789",
+            isArchived: false,
+          },
+        },
+        permissions: { create: { ...validUser.permissions, manageOrganizations: false } },
+      },
+      include: { permissions: true, organization: true },
+    });
+
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: JSON.stringify({ user: anotherUser }),
+    });
+    const json = await response.json();
+    //! Assert
+    expect(json).toEqual({ message: "User not found" });
+    expect(response.status).toBe(404);
+  });
+
   test("ensure that the user cannot assign the permission to manage other users to themselves if they do not have this permission", async () => {
     //! Arrange
     await db.user.update({
