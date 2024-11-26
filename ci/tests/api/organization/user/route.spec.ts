@@ -62,6 +62,142 @@ describe("route.spec.ts - get", () => {
     expect(response.status).toBe(403);
   });
 });
+
+describe("route.spec.ts - put", () => {
+  let db: PrismaClient;
+  let token: CiAuthToken;
+  let validUser: User;
+
+  beforeAll(async () => {
+    db = new PrismaClient();
+    await clearDb(db);
+  });
+
+  beforeEach(async () => {
+    await clearDb(db);
+    await createUser(db);
+    token = await login();
+
+    validUser = {
+      id: v7(),
+      email: "user2@domain.com",
+      password: "password1F",
+      isArchived: false,
+      name: "User 2",
+      phone: "123456789",
+      permissions: {
+        id: v7(),
+        manageOrganization: false,
+        manageOrganizations: false,
+        manageUsers: false,
+      },
+      organization: token.data.organization,
+    };
+  });
+
+  afterAll(async () => {
+    await clearDb(db);
+  });
+
+  test("ensure return 401 if not authenticated", async () => {
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+    });
+    //! Assert
+    expect(response.status).toBe(401);
+  });
+
+  test("ensure return 403 if not has permission", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: false, manageUsers: false } },
+      },
+    });
+    token = await login();
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: JSON.stringify({ user: validUser }),
+    });
+    //! Assert
+    expect(response.status).toBe(403);
+  });
+
+  test("ensure return 400 if invalid json", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    token = await login();
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: "invalid json",
+    });
+    //! Assert
+    expect(response.status).toBe(400);
+  });
+
+  test("ensure return 400 if invalid user", async () => {
+    //! Arrange
+    validUser.email = "invalid email";
+    const body = { user: validUser };
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    token = await login();
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    //! Assert
+    expect(response.status).toBe(400);
+  });
+
+  test("ensure return 404 if valid user not exists", async () => {
+    //! Arrange
+    const body = { user: validUser };
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    token = await login();
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const json = await response.json();
+    //! Assert
+    expect(response.status).toBe(404);
+    expect(json.message).toBe("User not found");
+  });
+});
+
 describe("route.spec.ts - post", () => {
   let db: PrismaClient;
   let token: CiAuthToken;
