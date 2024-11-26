@@ -7,6 +7,7 @@ import { v7 } from "uuid";
 describe("route.spec.ts - get", () => {
   let db: PrismaClient;
   let token: CiAuthToken;
+  let validUser: User;
 
   beforeAll(async () => {
     db = new PrismaClient();
@@ -17,6 +18,22 @@ describe("route.spec.ts - get", () => {
     await clearDb(db);
     await createUser(db);
     token = await login();
+
+    validUser = {
+      id: v7(),
+      email: "user2@domain.com",
+      password: "password1F",
+      isArchived: false,
+      name: "User 2",
+      phone: "123456789",
+      permissions: {
+        id: v7(),
+        manageOrganization: false,
+        manageOrganizations: false,
+        manageUsers: false,
+      },
+      organization: token.data.organization,
+    };
   });
 
   afterAll(async () => {
@@ -42,6 +59,108 @@ describe("route.spec.ts - get", () => {
     //! Assert
     expect(response.status).toBe(200);
   });
+
+  test("ensure get user of another organization if has permission", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: true, manageUsers: true } },
+      },
+    });
+    token = await login();
+    // Cria o usuario de outra organização
+    const anotherUser = await db.user.create({
+      data: {
+        ...validUser,
+        password: "password1F",
+        organization: {
+          create: {
+            id: v7(),
+            name: "Another Organization",
+            cnpj: "60143175000180",
+            city: "City",
+            state: "ST",
+            country: "BR",
+            address: "Address",
+            email: "email@domain.com",
+            zip: "12345678",
+            phone: "123456789",
+            isArchived: false,
+          },
+        },
+        permissions: { create: { ...validUser.permissions, manageOrganizations: false } },
+      },
+      include: { permissions: true, organization: true },
+    });
+
+    //! Act
+    const response = await fetch(
+      `http://localhost:3000/api/organization/user?organizationId=${anotherUser.organization.id}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token.ci.token}`,
+        },
+      },
+    );
+    const json = await response.json();
+    //! Assert
+    expect(response.status).toBe(200);
+    expect(json.users).not.toBeUndefined();
+    expect(json.users.length).toBe(1);
+    expect(json.users[0].organization.id).toBe(anotherUser.organization.id);
+  });
+
+  test("ensure not get user of another organization if no has permission", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: true, manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    token = await login();
+    // Cria o usuario de outra organização
+    const anotherUser = await db.user.create({
+      data: {
+        ...validUser,
+        password: "password1F",
+        organization: {
+          create: {
+            id: v7(),
+            name: "Another Organization",
+            cnpj: "60143175000180",
+            city: "City",
+            state: "ST",
+            country: "BR",
+            address: "Address",
+            email: "email@domain.com",
+            zip: "12345678",
+            phone: "123456789",
+            isArchived: false,
+          },
+        },
+        permissions: { create: { ...validUser.permissions, manageOrganizations: false } },
+      },
+      include: { permissions: true, organization: true },
+    });
+
+    //! Act
+    const response = await fetch(
+      `http://localhost:3000/api/organization/user?organizationId=${anotherUser.organization.id}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token.ci.token}`,
+        },
+      },
+    );
+
+    //! Assert
+    expect(response.status).toBe(403);
+  });
+
   test("ensure not get user if no has permission", async () => {
     //! Arrange
     await db.user.update({
