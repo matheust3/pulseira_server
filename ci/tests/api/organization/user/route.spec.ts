@@ -62,7 +62,7 @@ describe("route.spec.ts - get", () => {
     expect(response.status).toBe(403);
   });
 });
-describe("route.spec.ts - put", () => {
+describe("route.spec.ts - post", () => {
   let db: PrismaClient;
   let token: CiAuthToken;
   let validUser: User;
