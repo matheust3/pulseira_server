@@ -23,13 +23,19 @@ export class UserControllerImpl implements UserController {
       res.status = 401;
       res.body = { message: "Unauthorized" };
     } else {
-      if (req.authorization.user.permissions.manageUsers) {
-        const users = await this.userRepository.getAllInOrganization(req.authorization.user.organization.id);
-        res.status = 200;
-        res.body = { users };
-      } else {
+      const organizationId = req.searchParams.get("organizationId");
+      if (organizationId && !req.authorization.user.permissions.manageOrganizations) {
         res.status = 403;
         res.body = { message: "Forbidden" };
+      } else {
+        if (req.authorization.user.permissions.manageUsers) {
+          const users = await this.userRepository.getAllInOrganization(req.authorization.user.organization.id);
+          res.status = 200;
+          res.body = { users };
+        } else {
+          res.status = 403;
+          res.body = { message: "Forbidden" };
+        }
       }
     }
   }

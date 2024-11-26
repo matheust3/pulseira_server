@@ -66,7 +66,7 @@ describe("UserControllerImpl - post", () => {
       isArchived: false,
     };
 
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       authorization: {
         user: {
           id: "master-user-id",
@@ -103,7 +103,7 @@ describe("UserControllerImpl - post", () => {
   });
 
   it("should return 403 if user does not have manageUsers permission", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
@@ -500,7 +500,7 @@ describe("UserControllerImpl - get", () => {
   let getUserController: UserControllerImpl;
   let mockUserRepository: MockProxy<UserRepository>;
   let mockUuidService: MockProxy<UuidService>;
-  let mockRequest: MockProxy<Request>;
+  let mockRequest: DeepMockProxy<Request>;
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
   let validOrganization: Organization;
@@ -547,7 +547,7 @@ describe("UserControllerImpl - get", () => {
       isArchived: false,
     };
 
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       authorization: {
         user: {
           id: "master-user-id",
@@ -561,6 +561,19 @@ describe("UserControllerImpl - get", () => {
     });
 
     mockResponse = mockDeep<ApiResponse>();
+  });
+
+  test("ensure return 403 if try get users of another organizations without authorization", async () => {
+    //! Arrange
+    mockRequest = mockDeep<Request>({
+      ...mockRequest,
+      authorization: { user: { permissions: { manageUsers: true, manageOrganizations: false } } },
+    });
+    mockRequest.searchParams.get.mockReturnValue("another-organization-id");
+    //! Act
+    await getUserController.get(mockRequest, mockResponse);
+    //! Assert
+    expect(mockResponse.status).toBe(403);
   });
 
   it("should return users successfully", async () => {
@@ -583,7 +596,7 @@ describe("UserControllerImpl - get", () => {
   });
 
   it("should return 403 if user does not have manageUsers permission", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
