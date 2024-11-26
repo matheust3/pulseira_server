@@ -242,7 +242,7 @@ describe("UserControllerImpl - put", () => {
   let updateUserController: UserControllerImpl;
   let mockUserRepository: MockProxy<UserRepository>;
   let mockUuidService: MockProxy<UuidService>;
-  let mockRequest: MockProxy<Request>;
+  let mockRequest: DeepMockProxy<Request>;
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
   let validOrganization: Organization;
@@ -289,7 +289,8 @@ describe("UserControllerImpl - put", () => {
       isArchived: false,
     };
 
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
+      searchParams: mockDeep<URLSearchParams>(),
       authorization: {
         user: {
           id: "master-user-id",
@@ -301,8 +302,22 @@ describe("UserControllerImpl - put", () => {
         },
       },
     });
+    mockRequest.searchParams.get.mockReturnValue(null);
 
     mockResponse = mockDeep<ApiResponse>();
+  });
+
+  test("ensure return 403 if pass organizationId has param and not have permission to manage organizations", async () => {
+    //! Arrange
+    mockRequest.searchParams.get.mockReturnValue("organization-id");
+    mockRequest = mockDeep<Request>({
+      ...mockRequest,
+      authorization: { user: { permissions: { manageOrganizations: false } } },
+    });
+    //! Act
+    await updateUserController.put(mockRequest, mockResponse);
+    //! Assert
+    expect(mockResponse.status).toBe(403);
   });
 
   it("should update a user successfully", async () => {
@@ -318,7 +333,7 @@ describe("UserControllerImpl - put", () => {
   });
 
   it("should update a user successfully if not authorized to manage user but is updating won profile", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: user.id } },
     });
@@ -344,7 +359,7 @@ describe("UserControllerImpl - put", () => {
   });
 
   it("should return 403 if user does not have manageUsers permission", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
@@ -357,7 +372,7 @@ describe("UserControllerImpl - put", () => {
   });
 
   it("should return 403 if user does not have manageUsers permission and user is not updating won user", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: {
         user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: "master-user" },
@@ -416,7 +431,7 @@ describe("UserControllerImpl - put", () => {
   });
 
   it("should not allow a user to alter their own permissions if they do not have manageUsers permission", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: user.id } },
     });
@@ -439,7 +454,7 @@ describe("UserControllerImpl - put", () => {
   });
 
   it("should not allow a user without manageOrganizations permission to grant this permission to another user", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: {
         user: { ...mockRequest.authorization.user, permissions: { manageOrganizations: false, manageUsers: true } },
