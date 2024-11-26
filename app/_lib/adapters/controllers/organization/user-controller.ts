@@ -64,7 +64,10 @@ export class UserControllerImpl implements UserController {
               }
             }
 
-            const user = await this.userRepository.update(validUser, req.authorization.user.organization.id);
+            const user = await this.userRepository.update(
+              validUser,
+              organizationId ?? req.authorization.user.organization.id,
+            );
             res.status = 200;
             res.body = { user };
           } else {

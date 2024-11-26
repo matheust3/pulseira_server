@@ -307,6 +307,17 @@ describe("UserControllerImpl - put", () => {
     mockResponse = mockDeep<ApiResponse>();
   });
 
+  test("ensure change user of another organization if have permission ", async () => {
+    //! Arrange
+    const anotherUser = { ...user, organization: { id: "another-organization-id" } };
+    mockRequest.json.mockResolvedValue({ user: anotherUser });
+    mockRequest.searchParams.get.mockReturnValue(anotherUser.organization.id);
+    //! Act
+    await updateUserController.put(mockRequest, mockResponse);
+    //! Assert
+    expect(mockUserRepository.update).toHaveBeenCalledWith(anotherUser, anotherUser.organization.id);
+  });
+
   test("ensure return 403 if pass organizationId has param and not have permission to manage organizations", async () => {
     //! Arrange
     mockRequest.searchParams.get.mockReturnValue("organization-id");
