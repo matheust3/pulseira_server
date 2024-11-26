@@ -308,6 +308,40 @@ describe("route.spec.ts - put", () => {
     const userUpdated = await db.user.findUnique({ where: { id: validUser.id }, include: { permissions: true } });
     expect(userUpdated?.permissions?.manageOrganizations).toBe(false);
   });
+
+  test("ensure that the user cannot change the permission to manage other organizations if they do not have this permission", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    token = await login();
+    await db.user.create({
+      data: {
+        ...validUser,
+        password: "password1F",
+        organization: {
+          connect: { id: token.data.organization.id },
+        },
+        permissions: { create: { ...validUser.permissions, manageOrganizations: true } },
+      },
+    });
+    const body = { user: { ...validUser, permissions: { ...validUser.permissions, manageOrganizations: false } } };
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    //! Assert
+    expect(response.status).toBe(200);
+    const userUpdated = await db.user.findUnique({ where: { id: validUser.id }, include: { permissions: true } });
+    expect(userUpdated?.permissions?.manageOrganizations).toBe(true);
+  });
 });
 
 describe("route.spec.ts - post", () => {
