@@ -205,6 +205,37 @@ describe("UserControllerImpl - post", () => {
     expect(mockResponse.status).toBe(400);
     expect(mockResponse.body).toEqual({ message: "User already exists" });
   });
+
+  it("should not allow a user to create another user with permissions they do not have", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: {
+        user: {
+          ...mockRequest.authorization.user,
+          permissions: { manageUsers: true, manageOrganizations: false, manageOrganization: false },
+        },
+      },
+    });
+
+    const newUser = {
+      ...user,
+      permissions: { ...user.permissions, manageOrganizations: true, manageOrganization: true },
+    };
+
+    mockRequest.json.mockResolvedValue({ user: newUser });
+    userValidator.validate = jest.fn().mockImplementation((user) => Promise.resolve(user));
+    mockUserRepository.create.mockImplementation((user) => Promise.resolve(user));
+
+    //! Act
+    await createUserController.post(mockRequest, mockResponse);
+    //! Assert
+    expect(mockResponse.status).toBe(201);
+    expect(mockUserRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissions: expect.objectContaining({ manageOrganizations: false, manageOrganization: false }),
+      }),
+    );
+  });
 });
 
 describe("UserControllerImpl - put", () => {
