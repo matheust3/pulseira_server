@@ -563,6 +563,19 @@ describe("UserControllerImpl - get", () => {
     mockResponse = mockDeep<ApiResponse>();
   });
 
+  test("ensure get users of another organizations if have permission", async () => {
+    //! Arrange
+    mockRequest = mockDeep<Request>({
+      ...mockRequest,
+      authorization: { user: { permissions: { manageUsers: true, manageOrganizations: true } } },
+    });
+    mockRequest.searchParams.get.mockReturnValue("another-organization-id");
+    //! Act
+    await getUserController.get(mockRequest, mockResponse);
+    //! Assert
+    expect(mockUserRepository.getAllInOrganization).toHaveBeenCalledWith("another-organization-id");
+  });
+
   test("ensure return 403 if try get users of another organizations without authorization", async () => {
     //! Arrange
     mockRequest = mockDeep<Request>({

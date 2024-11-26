@@ -29,7 +29,9 @@ export class UserControllerImpl implements UserController {
         res.body = { message: "Forbidden" };
       } else {
         if (req.authorization.user.permissions.manageUsers) {
-          const users = await this.userRepository.getAllInOrganization(req.authorization.user.organization.id);
+          const users = await this.userRepository.getAllInOrganization(
+            organizationId ?? req.authorization.user.organization.id,
+          );
           res.status = 200;
           res.body = { users };
         } else {
