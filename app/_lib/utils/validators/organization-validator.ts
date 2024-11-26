@@ -11,7 +11,7 @@ export const organizationValidator: ObjectSchema<Organization> = object({
   address: string().required(),
   city: string().required(),
   state: string().required(),
-  zip: string().matches(/^\d+$/, "cnpj must contain only numbers").required(),
+  zip: string().matches(/^\d+$/, "zip must contain only numbers").required(),
   country: string().required(),
   isArchived: boolean().required(),
 });
