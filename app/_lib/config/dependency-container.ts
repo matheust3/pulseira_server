@@ -16,6 +16,7 @@ import { AuthServiceImpl } from "../infra/services/auth-service-impl";
 import { AuthService } from "../core/application/gateways/auth-service";
 import { Guard } from "@/middlewares/guard";
 import { ResendEmailProvider } from "../infra/gateways/resend-email-provider";
+import { EmailProvider } from "../core/application/gateways/external/email-provider";
 
 type Factory<T> = () => T;
 
@@ -59,7 +60,7 @@ export class DependencyContainer {
     );
 
     // Gateways
-    this.define<ResendEmailProvider>("ResendEmailProvider", () => new ResendEmailProvider(this.get<Resend>("Resend")));
+    this.define<EmailProvider>("EmailProvider", () => new ResendEmailProvider(this.get<Resend>("Resend")));
 
     // Middlewares
     this.define<GetEmailTokenRateLimiter>("GetEmailTokenRateLimiter", () => new GetEmailTokenRateLimiter());
