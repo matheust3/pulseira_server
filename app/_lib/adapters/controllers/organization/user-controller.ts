@@ -40,6 +40,7 @@ export class UserControllerImpl implements UserController {
       res.body = { message: "Unauthorized" };
     } else {
       try {
+        // TODO: gerenciar usuarios de outras organizações
         const body = (await req.json()) as { user: User };
         const validUser = await userValidator.validate(body.user);
         // Se pode gerenciar usuários ou é o próprio usuário
