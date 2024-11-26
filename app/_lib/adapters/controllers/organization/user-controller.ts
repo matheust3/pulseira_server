@@ -23,13 +23,21 @@ export class UserControllerImpl implements UserController {
       res.status = 401;
       res.body = { message: "Unauthorized" };
     } else {
-      if (req.authorization.user.permissions.manageUsers) {
-        const users = await this.userRepository.getAllInOrganization(req.authorization.user.organization.id);
-        res.status = 200;
-        res.body = { users };
-      } else {
+      const organizationId = req.searchParams.get("organizationId");
+      if (organizationId && !req.authorization.user.permissions.manageOrganizations) {
         res.status = 403;
         res.body = { message: "Forbidden" };
+      } else {
+        if (req.authorization.user.permissions.manageUsers) {
+          const users = await this.userRepository.getAllInOrganization(
+            organizationId ?? req.authorization.user.organization.id,
+          );
+          res.status = 200;
+          res.body = { users };
+        } else {
+          res.status = 403;
+          res.body = { message: "Forbidden" };
+        }
       }
     }
   }
@@ -40,15 +48,40 @@ export class UserControllerImpl implements UserController {
       res.body = { message: "Unauthorized" };
     } else {
       try {
-        const body = (await req.json()) as { user: User };
-        const validUser = await userValidator.validate(body.user);
-        if (req.authorization.user.permissions.manageUsers || req.authorization.user.id === validUser.id) {
-          const user = await this.userRepository.update(validUser, req.authorization.user.organization.id);
-          res.status = 200;
-          res.body = { user };
-        } else {
+        // Verifica se está gerenciando outra empresa
+        const organizationId = req.searchParams.get("organizationId");
+        if (organizationId && req.authorization.user.permissions.manageOrganizations === false) {
           res.status = 403;
           res.body = { message: "Forbidden" };
+        } else {
+          const body = (await req.json()) as { user: User };
+          const validUser = await userValidator.validate(body.user);
+          // Se pode gerenciar usuários ou é o próprio usuário
+          if (req.authorization.user.permissions.manageUsers || req.authorization.user.id === validUser.id) {
+            // Se não pode gerenciar usuários, evita que o usuário altere suas próprias permissões
+            if (!req.authorization.user.permissions.manageUsers) {
+              validUser.permissions = req.authorization.user.permissions;
+            }
+            // Se o usuário não tem permissão para gerenciar organizações,
+            // evita que ele de essa permissão a outro usuário
+            if (!req.authorization.user.permissions.manageOrganizations && validUser.permissions.manageOrganizations) {
+              // Verifica se realmente o usuário que será atualiza já tem essa permissão
+              const userToUpdate = await this.userRepository.findById(validUser.id);
+              if (!userToUpdate.permissions.manageOrganizations) {
+                validUser.permissions.manageOrganizations = false;
+              }
+            }
+
+            const user = await this.userRepository.update(
+              validUser,
+              organizationId ?? req.authorization.user.organization.id,
+            );
+            res.status = 200;
+            res.body = { user };
+          } else {
+            res.status = 403;
+            res.body = { message: "Forbidden" };
+          }
         }
       } catch (e) {
         if (e instanceof InvalidJsonError) {
@@ -58,7 +91,7 @@ export class UserControllerImpl implements UserController {
           res.status = 400;
           res.body = { message: e.errors.join(", ") };
         } else if (e instanceof UserNotFoundError) {
-          res.status = 400;
+          res.status = 404;
           res.body = { message: "User not found" };
         } else {
           throw e;
@@ -82,22 +115,39 @@ export class UserControllerImpl implements UserController {
           body.user = {
             ...body.user,
             id: userId,
-            organization: req.authorization.user.organization,
-            permissions: { id: permissionId, manageUsers: false },
+            permissions: {
+              ...body.user.permissions,
+              id: permissionId,
+              manageOrganizations: req.authorization.user.permissions.manageOrganizations
+                ? body.user.permissions.manageOrganizations
+                : false,
+              manageOrganization: req.authorization.user.permissions.manageOrganization
+                ? body.user.permissions.manageOrganization
+                : false,
+            },
           };
           const validUser = await userValidator.validate(body.user);
-          try {
-            await this.userRepository.findByEmail(validUser.email);
-            res.status = 400;
-            res.body = { message: "User already exists" };
-          } catch (e) {
-            if (!(e instanceof UserNotFoundError)) {
-              throw e;
-            } else {
-              validUser.password = userPassword;
-              const user = await this.userRepository.create(validUser);
-              res.status = 201;
-              res.body = { user };
+          //  Se não tem permissão para gerenciar organizações, não pode criar usuários em outras organizações
+          if (
+            !req.authorization.user.permissions.manageOrganizations &&
+            validUser.organization.id !== req.authorization.user.organization.id
+          ) {
+            res.status = 403;
+            res.body = { message: "Forbidden" };
+          } else {
+            try {
+              await this.userRepository.findByEmail(validUser.email);
+              res.status = 400;
+              res.body = { message: "User already exists" };
+            } catch (e) {
+              if (!(e instanceof UserNotFoundError)) {
+                throw e;
+              } else {
+                validUser.password = userPassword;
+                const user = await this.userRepository.create(validUser);
+                res.status = 201;
+                res.body = { user };
+              }
             }
           }
         } catch (e) {

@@ -8,8 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "prepare": "husky",
-    "test": "jest --passWithNoTests --silent --noStackTrace --runInBand",
-    "test:watch": "npm test -- --watchAll"
+    "test": "jest --passWithNoTests --silent --noStackTrace --runInBand --config jest.config.js",
+    "test:watch": "npm test -- --watchAll",
+    "docker:ci:up": "docker compose -f ./ci/docker-compose.yml up -d",
+    "docker:ci:down": "docker compose -f ./ci/docker-compose.yml down",
+    "test:ci:up": "DATABASE_URL=$CI_DATABASE_URL && npm run docker:ci:up",
+    "test:ci:run": "jest --config jest.config.ci.js --silent --runInBand",
+    "test:ci": "npm run test:ci:up && npx prisma generate && npx prisma db push && npm run test:ci:run && npm run docker:ci:down",
+    "test:ci:watch": "npm run test:ci:up && npx prisma generate && npx prisma db push && npm run test:ci:run -- --watchAll && npm run docker:ci:down"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.617.0",
@@ -19,6 +25,7 @@
     "bcrypt": "^5.1.1",
     "jose": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "next": "14.2.3",
     "rate-limiter-flexible": "^5.0.3",
     "react": "^18",
@@ -35,6 +42,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.6",
+    "@types/lodash": "^4.17.13",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

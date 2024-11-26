@@ -8,18 +8,29 @@ datasource db {
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
+  id         String   @id @default(cuid())
+  name       String
+  cnpj       String   @unique @default("")
+  email      String   @default("")
+  phone      String   @default("")
+  address    String   @default("")
+  city       String   @default("")
+  state      String   @default("")
+  zip        String   @default("")
+  country    String   @default("")
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  users      User[]
 }
 
 model Permissions {
-  id          String  @id @default(cuid())
-  manageUsers Boolean @default(false)
-  userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id])
+  id                  String  @id @default(cuid())
+  manageUsers         Boolean @default(false)
+  manageOrganization  Boolean @default(false)
+  manageOrganizations Boolean @default(false)
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id])
 }
 
 model User {

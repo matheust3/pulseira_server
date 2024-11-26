@@ -44,8 +44,22 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
         name: true,
         password: false,
         isArchived: true,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
   });
@@ -77,8 +91,22 @@ describe("user-repository-impl.test.ts - findByEmail", () => {
         name: true,
         password: true,
         isArchived: true,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
   });
@@ -206,8 +234,22 @@ describe("user-repository-impl.test.ts - create", () => {
         name: true,
         password: false,
         isArchived: true,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
     expect(result).toEqual(
@@ -298,8 +340,22 @@ describe("user-repository-impl.test.ts - update", () => {
         email: true,
         phone: true,
         isArchived: true,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
     expect(result).toEqual(updatedUser);
@@ -377,8 +433,22 @@ describe("user-repository-impl.test.ts - getAllInOrganization", () => {
         phone: true,
         name: true,
         isArchived: true,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
   });
@@ -452,8 +522,22 @@ describe("user-repository-impl.test.ts - findById", () => {
         name: true,
         password: false,
         isArchived: true,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
   });

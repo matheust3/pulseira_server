@@ -15,17 +15,9 @@
         "dbaeumer.vscode-eslint",
         "prisma.prisma",
         "bradlc.vscode-tailwindcss",
-        "postman.postman-for-vscode"
-      ],
-      "settings": {
-        "[typescript]": {
-          "editor.formatOnSave": false
-        },
-        "editor.codeActionsOnSave": {
-          "source.fixAll": "always",
-          "source.fixAll.eslint": "always"
-        }
-      }
+        "postman.postman-for-vscode",
+        "github.vscode-github-actions"
+      ]
     }
   }
 }
