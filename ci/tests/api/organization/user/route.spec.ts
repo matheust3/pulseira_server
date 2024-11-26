@@ -196,6 +196,38 @@ describe("route.spec.ts - put", () => {
     expect(response.status).toBe(404);
     expect(json.message).toBe("User not found");
   });
+
+  test("ensure update user if has permission", async () => {
+    //! Arrange
+    const body = { user: validUser };
+    await db.user.create({
+      data: {
+        ...validUser,
+        password: "password1F",
+        organization: {
+          connect: { id: token.data.organization.id },
+        },
+        permissions: { create: { ...validUser.permissions } },
+      },
+    });
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    token = await login();
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    //! Assert
+    expect(response.status).toBe(200);
+  });
 });
 
 describe("route.spec.ts - post", () => {
