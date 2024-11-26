@@ -228,6 +228,52 @@ describe("route.spec.ts - put", () => {
     //! Assert
     expect(response.status).toBe(200);
   });
+
+  test("ensure update user if is itself and not manageUsers", async () => {
+    //! Arrange
+    const body = { user: token.data };
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: false, manageUsers: false } },
+      },
+    });
+    token = await login();
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    //! Assert
+    expect(response.status).toBe(200);
+  });
+
+  test("ensure that the user cannot assign the permission to manage other users to themselves if they do not have this permission", async () => {
+    //! Arrange
+    await db.user.update({
+      where: { id: token.data.id },
+      data: {
+        permissions: { update: { manageOrganization: false, manageOrganizations: false, manageUsers: false } },
+      },
+    });
+    token = await login();
+    const body = { user: { ...token.data, permissions: { ...token.data.permissions, manageUsers: true } } };
+    //! Act
+    const response = await fetch("http://localhost:3000/api/organization/user", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token.ci.token}`,
+      },
+      body: JSON.stringify(body),
+    });
+    //! Assert
+    expect(response.status).toBe(200);
+    const userUpdated = await db.user.findUnique({ where: { id: token.data.id }, include: { permissions: true } });
+    expect(userUpdated?.permissions?.manageUsers).toBe(false);
+  });
 });
 
 describe("route.spec.ts - post", () => {
