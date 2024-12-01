@@ -47,3 +47,21 @@ model User {
   permissions    Permissions?
   isArchived     Boolean      @default(false)
 }
+
+model State {
+  id           String   @id @default(cuid())
+  name         String
+  abbreviation String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  cities       City[]
+}
+
+model City {
+  id        String   @id @default(cuid())
+  name      String
+  state     State    @relation(fields: [stateId], references: [id])
+  stateId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
