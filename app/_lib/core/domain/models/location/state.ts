@@ -3,3 +3,5 @@ export type State = {
   name: string;
   abbreviation: string;
 };
+
+export const stateKeys: (keyof State)[] = ["id", "name", "abbreviation"];
