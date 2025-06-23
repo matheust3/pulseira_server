@@ -14,6 +14,10 @@ export class LoginRateLimiter implements Middleware {
   }
 
   async handler(request: Request, response: ApiResponse, next: () => void): Promise<void> {
+    if (process.env.NODE_ENV === "development") {
+      next();
+      return;
+    }
     try {
       await this.rateLimiter.consume(request.remoteAddress.ip ?? "no-ip", 1, {});
       next();

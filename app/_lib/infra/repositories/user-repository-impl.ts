@@ -26,8 +26,22 @@ export class UserRepositoryImpl implements UserRepository {
         name: true,
         isArchived: true,
         password: false,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
 
@@ -51,8 +65,22 @@ export class UserRepositoryImpl implements UserRepository {
         name: true,
         isArchived: true,
         phone: true,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
     return users.map((user) => {
@@ -84,8 +112,22 @@ export class UserRepositoryImpl implements UserRepository {
           email: true,
           phone: true,
           isArchived: true,
-          organization: { select: { id: true, name: true } },
-          permissions: { select: { id: true, manageUsers: true } },
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              city: true,
+              cnpj: true,
+              country: true,
+              email: true,
+              phone: true,
+              state: true,
+              zip: true,
+              isArchived: true,
+            },
+          },
+          permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
         },
       });
 
@@ -124,8 +166,22 @@ export class UserRepositoryImpl implements UserRepository {
         name: true,
         password: false,
         isArchived: true,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
 
@@ -148,8 +204,22 @@ export class UserRepositoryImpl implements UserRepository {
         name: true,
         isArchived: true,
         password: options?.withPassHash === true || false,
-        organization: { select: { id: true, name: true } },
-        permissions: { select: { id: true, manageUsers: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            cnpj: true,
+            country: true,
+            email: true,
+            phone: true,
+            state: true,
+            zip: true,
+            isArchived: true,
+          },
+        },
+        permissions: { select: { id: true, manageUsers: true, manageOrganization: true, manageOrganizations: true } },
       },
     });
 

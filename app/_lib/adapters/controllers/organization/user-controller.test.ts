@@ -9,6 +9,8 @@ import { DeepMockProxy, mock, mockDeep, MockProxy } from "jest-mock-extended";
 import { Request } from "../../../core/domain/models/routes/request";
 import { ValidationError } from "yup";
 import { UserNotFoundError } from "../../../core/domain/errors/user-not-found-error";
+import { Organization } from "@/app/_lib/core/domain/models/organization";
+import { Permissions } from "@/app/_lib/core/domain/models/permissions";
 
 describe("UserControllerImpl - post", () => {
   let createUserController: UserControllerImpl;
@@ -17,6 +19,8 @@ describe("UserControllerImpl - post", () => {
   let mockRequest: MockProxy<Request>;
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
+  let validOrganization: Organization;
+  let validPermissions: Permissions;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -30,18 +34,39 @@ describe("UserControllerImpl - post", () => {
       uuidService: mockUuidService,
     });
 
+    validOrganization = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      city: "org city",
+      address: "org address",
+      cnpj: "00000000000111",
+      country: "brazil",
+      email: "email@domain.com",
+      name: "org name",
+      phone: "65999216704",
+      state: "mt",
+      zip: "78455000",
+      isArchived: false,
+    };
+
+    validPermissions = {
+      id: "123e4567-e89b-12d3-a456-426614174001",
+      manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
       phone: "userPhone",
       password: "test-password",
       name: "Test User",
-      organization: { id: "org-id", name: "org-name" },
-      permissions: { id: "perm-id", manageUsers: false },
+      organization: validOrganization,
+      permissions: validPermissions,
       isArchived: false,
     };
 
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       authorization: {
         user: {
           id: "master-user-id",
@@ -78,7 +103,7 @@ describe("UserControllerImpl - post", () => {
   });
 
   it("should return 403 if user does not have manageUsers permission", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
@@ -117,12 +142,13 @@ describe("UserControllerImpl - post", () => {
   });
 
   it("should assign user details correctly", async () => {
-    mockRequest.json.mockResolvedValue(user);
+    //! Arrange
+    mockRequest.json.mockResolvedValue({ user });
     userValidator.validate = jest.fn().mockResolvedValue(user);
     mockUserRepository.create.mockResolvedValue(user);
-
+    //! Act
     await createUserController.post(mockRequest, mockResponse);
-
+    //! Assert
     expect(mockResponse.status).toBe(201);
     expect(mockResponse.body).toEqual({ user });
   });
@@ -146,7 +172,12 @@ describe("UserControllerImpl - post", () => {
     expect(userValidator.validate).toHaveBeenCalledWith({
       ...user,
       id: "not-valid-user-uuid-v7",
-      permissions: { id: "not-valid-permission-uuid-v7", manageUsers: false },
+      permissions: {
+        id: "not-valid-permission-uuid-v7",
+        manageUsers: true,
+        manageOrganizations: true,
+        manageOrganization: true,
+      },
     });
 
     expect(mockUserRepository.create).toHaveBeenCalledWith(
@@ -174,15 +205,48 @@ describe("UserControllerImpl - post", () => {
     expect(mockResponse.status).toBe(400);
     expect(mockResponse.body).toEqual({ message: "User already exists" });
   });
+
+  it("should not allow a user to create another user with permissions they do not have", async () => {
+    mockRequest = mock<Request>({
+      ...mockRequest,
+      authorization: {
+        user: {
+          ...mockRequest.authorization.user,
+          permissions: { manageUsers: true, manageOrganizations: false, manageOrganization: false },
+        },
+      },
+    });
+
+    const newUser = {
+      ...user,
+      permissions: { ...user.permissions, manageOrganizations: true, manageOrganization: true },
+    };
+
+    mockRequest.json.mockResolvedValue({ user: newUser });
+    userValidator.validate = jest.fn().mockImplementation((user) => Promise.resolve(user));
+    mockUserRepository.create.mockImplementation((user) => Promise.resolve(user));
+
+    //! Act
+    await createUserController.post(mockRequest, mockResponse);
+    //! Assert
+    expect(mockResponse.status).toBe(201);
+    expect(mockUserRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissions: expect.objectContaining({ manageOrganizations: false, manageOrganization: false }),
+      }),
+    );
+  });
 });
 
 describe("UserControllerImpl - put", () => {
   let updateUserController: UserControllerImpl;
   let mockUserRepository: MockProxy<UserRepository>;
   let mockUuidService: MockProxy<UuidService>;
-  let mockRequest: MockProxy<Request>;
+  let mockRequest: DeepMockProxy<Request>;
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
+  let validOrganization: Organization;
+  let validPermissions: Permissions;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -193,18 +257,40 @@ describe("UserControllerImpl - put", () => {
       uuidService: mockUuidService,
     });
 
+    validOrganization = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      city: "org city",
+      address: "org address",
+      cnpj: "00000000000111",
+      country: "brazil",
+      email: "email@domain.com",
+      name: "org name",
+      phone: "65999216704",
+      state: "mt",
+      zip: "78455000",
+      isArchived: false,
+    };
+
+    validPermissions = {
+      id: "123e4567-e89b-12d3-a456-426614174001",
+      manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
       phone: "userPhone",
       password: "test-password",
       name: "Test User",
-      organization: { id: "org-id", name: "org-name" },
-      permissions: { id: "perm-id", manageUsers: false },
+      organization: validOrganization,
+      permissions: validPermissions,
       isArchived: false,
     };
 
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
+      searchParams: mockDeep<URLSearchParams>(),
       authorization: {
         user: {
           id: "master-user-id",
@@ -216,8 +302,33 @@ describe("UserControllerImpl - put", () => {
         },
       },
     });
+    mockRequest.searchParams.get.mockReturnValue(null);
 
     mockResponse = mockDeep<ApiResponse>();
+  });
+
+  test("ensure change user of another organization if have permission ", async () => {
+    //! Arrange
+    const anotherUser = { ...user, organization: { id: "another-organization-id" } };
+    mockRequest.json.mockResolvedValue({ user: anotherUser });
+    mockRequest.searchParams.get.mockReturnValue(anotherUser.organization.id);
+    //! Act
+    await updateUserController.put(mockRequest, mockResponse);
+    //! Assert
+    expect(mockUserRepository.update).toHaveBeenCalledWith(anotherUser, anotherUser.organization.id);
+  });
+
+  test("ensure return 403 if pass organizationId has param and not have permission to manage organizations", async () => {
+    //! Arrange
+    mockRequest.searchParams.get.mockReturnValue("organization-id");
+    mockRequest = mockDeep<Request>({
+      ...mockRequest,
+      authorization: { user: { permissions: { manageOrganizations: false } } },
+    });
+    //! Act
+    await updateUserController.put(mockRequest, mockResponse);
+    //! Assert
+    expect(mockResponse.status).toBe(403);
   });
 
   it("should update a user successfully", async () => {
@@ -233,7 +344,7 @@ describe("UserControllerImpl - put", () => {
   });
 
   it("should update a user successfully if not authorized to manage user but is updating won profile", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: user.id } },
     });
@@ -259,7 +370,7 @@ describe("UserControllerImpl - put", () => {
   });
 
   it("should return 403 if user does not have manageUsers permission", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
@@ -272,7 +383,7 @@ describe("UserControllerImpl - put", () => {
   });
 
   it("should return 403 if user does not have manageUsers permission and user is not updating won user", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: {
         user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: "master-user" },
@@ -319,15 +430,69 @@ describe("UserControllerImpl - put", () => {
     await expect(updateUserController.put(mockRequest, mockResponse)).rejects.toThrow("Unknown error");
   });
 
-  it("should return 400 if userRepository.update throws UserNotFoundError", async () => {
+  it("should return 404 if userRepository.update throws UserNotFoundError", async () => {
     mockRequest.json.mockResolvedValue({ user });
     userValidator.validate = jest.fn().mockResolvedValue(user);
     mockUserRepository.update.mockRejectedValue(new UserNotFoundError());
 
     await updateUserController.put(mockRequest, mockResponse);
 
-    expect(mockResponse.status).toBe(400);
+    expect(mockResponse.status).toBe(404);
     expect(mockResponse.body).toEqual({ message: "User not found" });
+  });
+
+  it("should not allow a user to alter their own permissions if they do not have manageUsers permission", async () => {
+    mockRequest = mockDeep<Request>({
+      ...mockRequest,
+      authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false }, id: user.id } },
+    });
+    const alteredUser = { ...user, permissions: { manageUsers: true } };
+    mockRequest.json.mockResolvedValue({ user: alteredUser });
+
+    userValidator.validate = jest.fn().mockResolvedValue(alteredUser);
+    mockUserRepository.update.mockResolvedValue(user);
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(200);
+    expect(mockResponse.body).toEqual({ user });
+    expect(mockUserRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissions: mockRequest.authorization.user?.permissions,
+      }),
+      mockRequest.authorization.user?.organization.id,
+    );
+  });
+
+  it("should not allow a user without manageOrganizations permission to grant this permission to another user", async () => {
+    mockRequest = mockDeep<Request>({
+      ...mockRequest,
+      authorization: {
+        user: { ...mockRequest.authorization.user, permissions: { manageOrganizations: false, manageUsers: true } },
+      },
+    });
+    const alteredUser = { ...user, permissions: { manageOrganizations: true } };
+    mockRequest.json.mockResolvedValue({ user: alteredUser });
+
+    userValidator.validate = jest.fn().mockResolvedValue(alteredUser);
+    mockUserRepository.findById.mockResolvedValue({
+      ...user,
+      permissions: { ...user.permissions, manageOrganizations: false },
+    });
+    mockUserRepository.update.mockResolvedValue(user);
+
+    await updateUserController.put(mockRequest, mockResponse);
+
+    expect(mockResponse.status).toBe(200);
+    expect(mockResponse.body).toEqual({ user });
+    expect(mockUserRepository.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        permissions: expect.objectContaining({
+          manageOrganizations: false,
+        }),
+      }),
+      mockRequest.authorization.user?.organization.id,
+    );
   });
 });
 
@@ -335,9 +500,11 @@ describe("UserControllerImpl - get", () => {
   let getUserController: UserControllerImpl;
   let mockUserRepository: MockProxy<UserRepository>;
   let mockUuidService: MockProxy<UuidService>;
-  let mockRequest: MockProxy<Request>;
+  let mockRequest: DeepMockProxy<Request>;
   let mockResponse: DeepMockProxy<ApiResponse>;
   let user: User;
+  let validOrganization: Organization;
+  let validPermissions: Permissions;
 
   beforeEach(() => {
     mockUserRepository = mock<UserRepository>();
@@ -348,18 +515,39 @@ describe("UserControllerImpl - get", () => {
       uuidService: mockUuidService,
     });
 
+    validOrganization = {
+      id: "6a2f41a3-c54c-fce8-32d2-0324e1c32e22",
+      city: "org city",
+      address: "org address",
+      cnpj: "00000000000111",
+      country: "brazil",
+      email: "email@domain.com",
+      name: "org name",
+      phone: "65999216704",
+      state: "mt",
+      zip: "78455000",
+      isArchived: false,
+    };
+
+    validPermissions = {
+      id: "123e4567-e89b-12d3-a456-426614174001",
+      manageUsers: true,
+      manageOrganizations: true,
+      manageOrganization: true,
+    };
+
     user = {
       id: "user-id",
       email: "email@domain.com",
       phone: "userPhone",
       password: "test-password",
       name: "Test User",
-      organization: { id: "org-id", name: "org-name" },
-      permissions: { id: "perm-id", manageUsers: false },
+      organization: validOrganization,
+      permissions: validPermissions,
       isArchived: false,
     };
 
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       authorization: {
         user: {
           id: "master-user-id",
@@ -373,6 +561,32 @@ describe("UserControllerImpl - get", () => {
     });
 
     mockResponse = mockDeep<ApiResponse>();
+  });
+
+  test("ensure get users of another organizations if have permission", async () => {
+    //! Arrange
+    mockRequest = mockDeep<Request>({
+      ...mockRequest,
+      authorization: { user: { permissions: { manageUsers: true, manageOrganizations: true } } },
+    });
+    mockRequest.searchParams.get.mockReturnValue("another-organization-id");
+    //! Act
+    await getUserController.get(mockRequest, mockResponse);
+    //! Assert
+    expect(mockUserRepository.getAllInOrganization).toHaveBeenCalledWith("another-organization-id");
+  });
+
+  test("ensure return 403 if try get users of another organizations without authorization", async () => {
+    //! Arrange
+    mockRequest = mockDeep<Request>({
+      ...mockRequest,
+      authorization: { user: { permissions: { manageUsers: true, manageOrganizations: false } } },
+    });
+    mockRequest.searchParams.get.mockReturnValue("another-organization-id");
+    //! Act
+    await getUserController.get(mockRequest, mockResponse);
+    //! Assert
+    expect(mockResponse.status).toBe(403);
   });
 
   it("should return users successfully", async () => {
@@ -395,7 +609,7 @@ describe("UserControllerImpl - get", () => {
   });
 
   it("should return 403 if user does not have manageUsers permission", async () => {
-    mockRequest = mock<Request>({
+    mockRequest = mockDeep<Request>({
       ...mockRequest,
       authorization: { user: { ...mockRequest.authorization.user, permissions: { manageUsers: false } } },
     });
