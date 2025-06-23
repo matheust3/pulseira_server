@@ -1,5 +1,5 @@
 {
-  "name": "crm_api",
+  "name": "pulseira_server",
   "version": "0.1.9",
   "private": true,
   "scripts": {
