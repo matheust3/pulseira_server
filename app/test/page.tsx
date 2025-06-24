@@ -54,21 +54,23 @@ export default function Home() {
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
       <div className="w-full max-w-2xl mx-4 bg-white rounded-xl shadow-lg flex flex-col h-[80vh] border border-gray-200">
         <div
-          className={`px-6 py-3 text-sm font-medium rounded-t-xl ${connectionStatus === 'connected'
+          className={`px-6 py-3 text-sm font-medium rounded-t-xl ${
+            connectionStatus === 'connected'
               ? 'bg-green-50 text-green-700 border-b border-green-100'
               : connectionStatus === 'disconnected'
                 ? 'bg-red-50 text-red-700 border-b border-red-100'
                 : 'bg-yellow-50 text-yellow-700 border-b border-yellow-100'
-            }`}
+          }`}
         >
           <div className="flex items-center gap-2">
             <div
-              className={`w-2 h-2 rounded-full ${connectionStatus === 'connected'
+              className={`w-2 h-2 rounded-full ${
+                connectionStatus === 'connected'
                   ? 'bg-green-500'
                   : connectionStatus === 'disconnected'
                     ? 'bg-red-500'
                     : 'bg-yellow-500'
-                }`}
+              }`}
             ></div>
             Status: {connectionStatus}
           </div>
@@ -100,10 +102,11 @@ export default function Home() {
             <button
               type="submit"
               disabled={connectionStatus !== 'connected'}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${connectionStatus === 'connected'
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                connectionStatus === 'connected'
                   ? 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-sm hover:shadow'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+              }`}
             >
               Send
             </button>
