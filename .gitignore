@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .next/cache/eslint/.cache_1tpnfbe
+dist/server.js

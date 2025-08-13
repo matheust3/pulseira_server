@@ -1,13 +1,13 @@
 networks:
-  crm_dev_network:
+  pulseira_server_dev_network:
     driver: bridge
 
 services:
-  crm_api_dev_container:
+  pulseira_server_dev_container:
     privileged: true # Para invocar o CLI docker
     user: ubuntu
-    container_name: crm_api_dev_container
-    image: crm_api_dev_container
+    container_name: pulseira_server_dev_container
+    image: pulseira_server_dev_container
     shm_size: 2g
     build:
       context: ..
@@ -17,7 +17,7 @@ services:
     restart: on-failure
     environment:
       - DEV_ROOT_DIR=${DEV_ROOT_DIR}
-      - DATABASE_URL=postgresql://crm:crm@crm_dev_postgres:5432/crm
+      - DATABASE_URL=postgresql://pulseira_server:pulseira_server@pulseira_server_dev_postgres:5432/pulseira_server
       - CI_DATABASE_URL=postgresql://ci:ci_pass@host.docker.internal:5434/ci_db
       - S3_ACCESS_KEY=${MINIO_ROOT_USER}
       - S3_SECRET_KEY=${MINIO_ROOT_PASSWORD}
@@ -40,15 +40,15 @@ services:
     #Quando essa instrução terminar o container fecha
     command: /bin/sh -c "while sleep 1000; do :; done"
     networks:
-      - crm_dev_network
-  crm_dev_postgres:
-    container_name: crm_dev_postgres
+      - pulseira_server_dev_network
+  pulseira_server_dev_postgres:
+    container_name: pulseira_server_dev_postgres
     image: postgres:16.3
     restart: always
     environment:
-      POSTGRES_USER: crm
-      POSTGRES_PASSWORD: crm
-      POSTGRES_DB: crm
+      POSTGRES_USER: pulseira_server
+      POSTGRES_PASSWORD: pulseira_server
+      POSTGRES_DB: pulseira_server
     ports:
       - "5432:5432"
     volumes:
@@ -57,9 +57,9 @@ services:
         target: /var/lib/postgresql/data
     shm_size: 2g
     networks:
-      - crm_dev_network
-  crm_dev_minio:
-    container_name: crm_dev_minio
+      - pulseira_server_dev_network
+  pulseira_server_dev_minio:
+    container_name: pulseira_server_dev_minio
     image: minio/minio:latest
     restart: always
     environment:
@@ -76,11 +76,11 @@ services:
       - "9001:9001"
     command: server --console-address ":9001"
     networks:
-      - crm_dev_network
-  crm_dev_create_mio_bucket:
+      - pulseira_server_dev_network
+  pulseira_server_dev_create_mio_bucket:
     image: minio/mc:latest
     depends_on:
-      - crm_dev_minio
+      - pulseira_server_dev_minio
     environment:
       MC_HOST_minio: http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@127.0.0.1:9000
     entrypoint:
@@ -91,4 +91,4 @@ services:
           sleep 0.5
         done
         mc mb --region us-east-1 minio/images-bucket
-    network_mode: service:crm_dev_minio
+    network_mode: service:pulseira_server_dev_minio
