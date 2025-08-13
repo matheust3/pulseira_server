@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:ci": "DATABASE_URL=$CI_DATABASE_URL next dev",
-    "build": "next build",
+    "build": "next build && tsc server.ts --outDir dist --target es2017 --module commonjs --esModuleInterop",
     "start": "next start",
     "lint": "next lint",
     "prepare": "husky",

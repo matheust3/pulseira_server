@@ -17,5 +17,6 @@
   },
   "eslint.options": {
     "overrideConfigFile": ".eslintrc.json"
-  }
+  },
+  "postman.settings.dotenv-detection-notification-visibility": false
 }
