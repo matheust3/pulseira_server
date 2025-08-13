@@ -6,6 +6,6 @@ services:
     working_dir: /app
     volumes:
       - ${DEV_ROOT_DIR:-.}:/app
-    command: bash -c "npm i && npm install -g nextui-cli && node ./dist/server"
+    command: bash -c "npm i && npm install -g nextui-cli && npm run build && node ./dist/server"
     ports:
       - "8080:3000"
