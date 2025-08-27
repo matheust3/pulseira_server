@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:ci": "DATABASE_URL=$CI_DATABASE_URL next dev",
     "build": "next build && tsc --project tsconfig.server.json && tsc-alias -p tsconfig.server.json server.ts",
-    "start": "next start",
+    "start": "node ./dist/server.js",
     "lint": "next lint",
     "prepare": "husky",
     "test": "jest --passWithNoTests --silent --noStackTrace --runInBand --config jest.config.js",

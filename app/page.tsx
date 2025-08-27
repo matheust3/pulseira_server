@@ -16,6 +16,16 @@ export default function Home() {
 
     ws.onopen = () => {
       setConnectionStatus('connected')
+
+      // Enviar evento device_info automaticamente quando conectar
+      const deviceInfo = {
+        event: 'device_info',
+        type: 'manager',
+        deviceId: `manager_${Date.now()}`, // ID único para o manager
+        firmware: 'web_1.0.0',
+      }
+
+      ws.send(JSON.stringify(deviceInfo))
     }
 
     ws.onclose = () => {
