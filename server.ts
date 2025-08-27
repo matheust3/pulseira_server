@@ -23,7 +23,7 @@ nextApp.prepare().then(() => {
     clients.add(ws);
     console.log("New client connected");
 
-    ws.on("message", (message: Buffer, isBinary: boolean) => {
+    ws.on("message", async (message: Buffer) => {
       console.log(`Message received: ${message}`);
 
       let data;
@@ -46,13 +46,21 @@ nextApp.prepare().then(() => {
         devicesSockets.set(ws, device.id);
 
         console.log(`Device ${device.id} connected and added to repository`);
-      }
 
-      clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN && message.toString() !== `{"event":"ping"}`) {
-          client.send(message, { binary: isBinary });
+        // Se um novo manager se conectar, envia para ele quais pulseiras já estão conectadas
+        if (device.type === "manager") {
+          const pulseiras = (await devicesRepository.findAll()).filter((d) => d.type === "pulseira");
+          pulseiras.forEach((pulseira) => {
+            const info = {
+              event: "device_info",
+              type: pulseira.type,
+              deviceId: pulseira.id,
+              firmware: pulseira.firmwareVersion,
+            };
+            ws.send(JSON.stringify(info));
+          });
         }
-      });
+      }
     });
 
     ws.on("close", () => {
