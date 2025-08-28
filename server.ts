@@ -101,6 +101,40 @@ nextApp.prepare().then(() => {
         return;
       }
 
+      // Encaminhar evento action para o device de destino
+      if (data.event === "action" && data.to_id) {
+        const targetDeviceId = data.to_id;
+        const targetConnections = deviceConnections.get(targetDeviceId);
+
+        if (targetConnections && targetConnections.size > 0) {
+          // Enviar para todas as conexões ativas do device de destino
+          targetConnections.forEach((targetSocket) => {
+            if (targetSocket.readyState === WebSocket.OPEN) {
+              targetSocket.send(
+                JSON.stringify({
+                  event: "action",
+                  from_id: deviceId, // ID de quem enviou
+                  to_id: targetDeviceId,
+                  timestamp: Date.now(),
+                }),
+              );
+              console.log(`Action forwarded from ${deviceId} to ${targetDeviceId}`);
+            }
+          });
+        } else {
+          console.log(`Target device ${targetDeviceId} not found or not connected`);
+          // Opcional: enviar resposta de erro de volta ao remetente
+          ws.send(
+            JSON.stringify({
+              event: "action_error",
+              message: "Target device not found or not connected",
+              target_id: targetDeviceId,
+            }),
+          );
+        }
+        return;
+      }
+
       if (data.event === "device_info") {
         const device: Device = {
           id: data.deviceId,
