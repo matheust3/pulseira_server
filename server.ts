@@ -235,7 +235,7 @@ nextApp.prepare().then(() => {
       } else {
         clearInterval(pingInterval);
       }
-    }, 30000); // Ping a cada 30 segundos
+    }, 1000); // Ping a cada 1 segundos
 
     ws.on("close", () => {
       clearInterval(pingInterval);
