@@ -111,6 +111,20 @@ export default function Home() {
     })
   }
 
+  const sendActionToDevice = (deviceId: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      const actionEvent = {
+        event: 'action',
+        to_id: deviceId,
+      }
+
+      wsRef.current.send(JSON.stringify(actionEvent))
+      console.log(`Action sent to device: ${deviceId}`)
+    } else {
+      console.error('WebSocket is not connected')
+    }
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 p-4">
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg border border-gray-200">
@@ -201,19 +215,38 @@ export default function Home() {
 
                   {/* Indicador visual de status */}
                   <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          device.status === 'online'
-                            ? 'bg-green-500'
-                            : 'bg-gray-400'
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            device.status === 'online'
+                              ? 'bg-green-500'
+                              : 'bg-gray-400'
+                          }`}
+                        ></div>
+                        <span className="text-xs text-gray-500">
+                          {device.status === 'online'
+                            ? 'Online agora'
+                            : 'Desconectado'}
+                        </span>
+                      </div>
+
+                      {/* Botão de ação */}
+                      <button
+                        onClick={() => sendActionToDevice(device.deviceId)}
+                        disabled={
+                          device.status !== 'online' ||
+                          connectionStatus !== 'connected'
+                        }
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                          device.status === 'online' &&
+                          connectionStatus === 'connected'
+                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
-                      ></div>
-                      <span className="text-xs text-gray-500">
-                        {device.status === 'online'
-                          ? 'Online agora'
-                          : 'Desconectado'}
-                      </span>
+                      >
+                        Liberar
+                      </button>
                     </div>
                   </div>
                 </div>
