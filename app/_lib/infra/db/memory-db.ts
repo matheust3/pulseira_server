@@ -1,9 +1,17 @@
+interface WithId {
+  id?: string;
+}
+
 export class MemoryDB {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private data: Map<string, any> = new Map();
 
-  async create<T>(collection: string, item: T): Promise<T> {
-    const id = this.generateId();
+  async create<T extends WithId>(collection: string, item: T): Promise<T> {
+    // if not have id
+    if (item.id === undefined || item.id === null) {
+      item.id = this.generateId();
+    }
+    const id = item.id;
     this.data.set(id, { ...item, id, collection });
     return { ...item, id };
   }
