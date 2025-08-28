@@ -12,12 +12,37 @@ const clients: Set<WebSocket> = new Set();
 const devicesSockets: Map<WebSocket, string> = new Map();
 const devicesRepository = dependencyContainer.get<DevicesRepository>("DevicesRepository");
 
+// Mapa para controlar pings e timeouts
+const devicePingStatus: Map<string, { lastPing: number; timeout?: NodeJS.Timeout }> = new Map();
+
 nextApp.prepare().then(() => {
   const server: Server = createServer((req: IncomingMessage, res: ServerResponse) => {
     handle(req, res);
   });
 
   const wss = new WebSocketServer({ noServer: true });
+
+  // Função para verificar dispositivos inativos
+  const checkInactiveDevices = (): void => {
+    const now = Date.now();
+    const TIMEOUT_MS = 60000; // 60 segundos
+
+    devicePingStatus.forEach((status, deviceId) => {
+      if (now - status.lastPing > TIMEOUT_MS) {
+        console.log(`Device ${deviceId} inactive - removing...`);
+
+        // Encontrar e fechar a conexão
+        devicesSockets.forEach((id, socket) => {
+          if (id === deviceId) {
+            socket.close(1000, "Inactive device");
+          }
+        });
+      }
+    });
+  };
+
+  // Verificar dispositivos inativos a cada 30 segundos
+  setInterval(checkInactiveDevices, 30000);
 
   wss.on("connection", (ws: WebSocket) => {
     clients.add(ws);
@@ -32,9 +57,25 @@ nextApp.prepare().then(() => {
         data = JSON.parse(message.toString());
       } catch (e) {
         console.error("Error parsing message:", e);
+        return;
       }
 
       console.log(data);
+
+      // Atualizar ping status quando receber qualquer mensagem
+      const deviceId = devicesSockets.get(ws);
+      if (deviceId) {
+        const status = devicePingStatus.get(deviceId);
+        if (status) {
+          status.lastPing = Date.now();
+        }
+      }
+
+      // Responder a pings
+      if (data.event === "ping") {
+        ws.send(JSON.stringify({ event: "pong" }));
+        return;
+      }
 
       if (data.event === "device_info") {
         const device: Device = {
@@ -42,36 +83,88 @@ nextApp.prepare().then(() => {
           type: data.type,
           firmwareVersion: data.firmware,
         };
-        devicesRepository.create(device);
-        devicesSockets.set(ws, device.id);
 
-        console.log(`Device ${device.id} connected and added to repository`);
+        try {
+          await devicesRepository.create(device);
+          devicesSockets.set(ws, device.id);
 
-        // Se um novo manager se conectar, envia para ele quais pulseiras já estão conectadas
-        if (device.type === "manager") {
-          const pulseiras = (await devicesRepository.findAll()).filter((d) => d.type === "pulseira");
-          pulseiras.forEach((pulseira) => {
-            const info = {
-              event: "device_info",
-              type: pulseira.type,
-              deviceId: pulseira.id,
-              firmware: pulseira.firmwareVersion,
-            };
-            ws.send(JSON.stringify(info));
-          });
+          // Inicializar status de ping
+          devicePingStatus.set(device.id, { lastPing: Date.now() });
+
+          console.log(`Device ${device.id} connected and added to repository`);
+
+          // Se um novo manager se conectar, envia para ele quais pulseiras já estão conectadas
+          if (device.type === "manager") {
+            const allDevices = await devicesRepository.findAll();
+            const pulseiras = allDevices.filter((d) => d.type === "pulseira");
+
+            pulseiras.forEach((pulseira) => {
+              const info = {
+                event: "device_info",
+                type: pulseira.type,
+                deviceId: pulseira.id,
+                firmware: pulseira.firmwareVersion,
+              };
+              ws.send(JSON.stringify(info));
+            });
+          }
+
+          // Se uma nova pulseira se conectar, envia para todos os managers
+          if (device.type === "pulseira") {
+            const allDevices = await devicesRepository.findAll();
+            const managers = allDevices.filter((d) => d.type === "manager");
+
+            managers.forEach((manager) => {
+              const info = {
+                event: "device_info",
+                type: device.type,
+                deviceId: device.id,
+                firmware: device.firmwareVersion,
+              };
+
+              devicesSockets.forEach((id, socket) => {
+                if (id === manager.id && socket.readyState === WebSocket.OPEN) {
+                  socket.send(JSON.stringify(info));
+                }
+              });
+            });
+          }
+        } catch (error) {
+          console.error("Error creating device:", error);
         }
       }
     });
 
-    ws.on("close", () => {
+    ws.on("close", async () => {
       clients.delete(ws);
       const deviceId = devicesSockets.get(ws);
       devicesSockets.delete(ws);
+
       if (deviceId) {
-        devicesRepository.delete(deviceId);
-        console.log(`Device ${deviceId} disconnected and removed from repository`);
+        try {
+          await devicesRepository.delete(deviceId);
+          const devices = await devicesRepository.findAll();
+          console.log("Current devices:", devices);
+          devicePingStatus.delete(deviceId);
+          console.log(`Device ${deviceId} disconnected and removed from repository`);
+        } catch (error) {
+          console.error("Error deleting device:", error);
+        }
       }
       console.log("Client disconnected");
+    });
+
+    // Enviar ping periodicamente para testar conexão
+    const pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ event: "ping" }));
+      } else {
+        clearInterval(pingInterval);
+      }
+    }, 30000); // Ping a cada 30 segundos
+
+    ws.on("close", () => {
+      clearInterval(pingInterval);
     });
   });
 
