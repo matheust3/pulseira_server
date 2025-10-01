@@ -1,112 +1,269 @@
-import Image from 'next/image'
+'use client'
+import { useEffect, useRef, useState } from 'react'
+
+interface Device {
+  deviceId: string
+  type: string
+  firmware: string
+  status: 'online' | 'offline'
+  connectedAt: Date
+}
 
 export default function Home() {
+  const [devices, setDevices] = useState<Device[]>([])
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connected' | 'disconnected' | 'connecting'
+  >('connecting')
+  const wsRef = useRef<WebSocket | null>(null)
+
+  useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const ws = new WebSocket(`${protocol}//${window.location.host}/api/ws`)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      setConnectionStatus('connected')
+
+      // Enviar evento device_info automaticamente quando conectar
+      const deviceInfo = {
+        event: 'device_info',
+        type: 'manager',
+        deviceId: `manager_${Date.now()}`,
+        firmware: 'web_1.0.0',
+      }
+
+      ws.send(JSON.stringify(deviceInfo))
+    }
+
+    ws.onclose = () => {
+      setConnectionStatus('disconnected')
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+
+        // Ignorar mensagens ping/pong
+        if (data.event === 'ping' || data.event === 'pong') {
+          return
+        }
+
+        // Adicionar device quando receber device_info de pulseira
+        if (data.event === 'device_info' && data.type === 'pulseira') {
+          setDevices((prevDevices) => {
+            // Verificar se o device já existe na lista
+            const existingDevice = prevDevices.find(
+              (device) => device.deviceId === data.deviceId,
+            )
+
+            if (existingDevice) {
+              // Atualizar status para online se já existir
+              return prevDevices.map((device) =>
+                device.deviceId === data.deviceId
+                  ? { ...device, status: 'online' as const }
+                  : device,
+              )
+            } else {
+              // Adicionar novo device
+              const newDevice: Device = {
+                deviceId: data.deviceId,
+                type: data.type,
+                firmware: data.firmware,
+                status: 'online',
+                connectedAt: new Date(),
+              }
+              return [...prevDevices, newDevice]
+            }
+          })
+        }
+
+        // Remover device quando receber device_disconnected
+        if (data.event === 'device_disconnected') {
+          setDevices((prevDevices) =>
+            prevDevices.filter((device) => device.deviceId !== data.deviceId),
+          )
+        }
+      } catch (error) {
+        // Se não for JSON válido, ignorar
+        console.log('Received non-JSON message:', event.data)
+      }
+    }
+
+    const pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(`{"event":"ping"}`)
+      }
+    }, 30000) // Ping a cada 30 segundos
+
+    return () => {
+      clearInterval(pingInterval)
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+    }
+  }, [])
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+  }
+
+  const sendActionToDevice = (deviceId: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      const actionEvent = {
+        event: 'action',
+        to_id: deviceId,
+      }
+
+      wsRef.current.send(JSON.stringify(actionEvent))
+      console.log(`Action sent to device: ${deviceId}`)
+    } else {
+      console.error('WebSocket is not connected')
+    }
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 p-4">
+      <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg border border-gray-200">
+        {/* Header com status de conexão */}
+        <div
+          className={`px-6 py-4 rounded-t-xl border-b ${
+            connectionStatus === 'connected'
+              ? 'bg-green-50 text-green-700 border-green-100'
+              : connectionStatus === 'disconnected'
+                ? 'bg-red-50 text-red-700 border-red-100'
+                : 'bg-yellow-50 text-yellow-700 border-yellow-100'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  connectionStatus === 'connected'
+                    ? 'bg-green-500'
+                    : connectionStatus === 'disconnected'
+                      ? 'bg-red-500'
+                      : 'bg-yellow-500'
+                }`}
+              ></div>
+              <span className="font-medium">
+                Status do Manager: {connectionStatus}
+              </span>
+            </div>
+            <div className="text-sm">
+              Devices conectados:{' '}
+              {devices.filter((d) => d.status === 'online').length}
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
+        {/* Lista de devices */}
+        <div className="p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Pulseiras Conectadas
           </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+          {devices.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 text-lg mb-2">📱</div>
+              <p className="text-gray-500">Nenhuma pulseira conectada</p>
+              <p className="text-gray-400 text-sm mt-1">
+                As pulseiras aparecerão aqui quando se conectarem
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {devices.map((device) => (
+                <div
+                  key={device.deviceId}
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-800 truncate">
+                      {device.deviceId}
+                    </h3>
+                    <div
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        device.status === 'online'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {device.status}
+                    </div>
+                  </div>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Tipo:</span>
+                      <span className="font-medium">{device.type}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Firmware:</span>
+                      <span className="font-medium">{device.firmware}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Conectado:</span>
+                      <span className="font-medium">
+                        {formatTime(device.connectedAt)}
+                      </span>
+                    </div>
+                  </div>
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
+                  {/* Indicador visual de status */}
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            device.status === 'online'
+                              ? 'bg-green-500'
+                              : 'bg-gray-400'
+                          }`}
+                        ></div>
+                        <span className="text-xs text-gray-500">
+                          {device.status === 'online'
+                            ? 'Online agora'
+                            : 'Desconectado'}
+                        </span>
+                      </div>
+
+                      {/* Botão de ação */}
+                      <button
+                        onClick={() => sendActionToDevice(device.deviceId)}
+                        disabled={
+                          device.status !== 'online' ||
+                          connectionStatus !== 'connected'
+                        }
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                          device.status === 'online' &&
+                          connectionStatus === 'connected'
+                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Liberar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer com informações */}
+        <div className="px-6 py-4 bg-gray-50 rounded-b-xl border-t border-gray-100">
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <span>Monitor de Pulseiras - Tempo real</span>
+            <span>
+              Última atualização: {new Date().toLocaleTimeString('pt-BR')}
             </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+          </div>
+        </div>
       </div>
     </main>
   )
